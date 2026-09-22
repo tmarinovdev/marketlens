@@ -1,0 +1,3 @@
+# Prettier also reads .gitignore, including local reference files and build output.
+# npm owns the formatting of its generated lockfile.
+package-lock.json

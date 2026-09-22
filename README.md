@@ -337,35 +337,103 @@ e2e/
 
 ## Development
 
-Exact scaffold commands will be added once the initial project setup is committed.
+The core package setup uses Node.js 24.x and npm. React, Vite, TypeScript,
+and their supporting type packages are installed locally in the project.
 
-Expected workflow:
+Install the locked dependencies after cloning:
 
 ```bash
-npm install
+npm ci
+```
+
+Commit both `package.json` and `package-lock.json`; `node_modules/` remains
+ignored. Direct dependency versions are pinned so upgrades are deliberate.
+
+Run the SSR development server at `http://127.0.0.1:5173`:
+
+```bash
 npm run dev
 ```
 
-Expected scripts:
+The server uses Node's built-in HTTP module and Vite middleware. Node 24 runs
+`server/dev.ts` directly using native type stripping; TypeScript checking is
+a separate step. Vite transforms the React TSX files and provides Fast Refresh.
+Restart `npm run dev` after editing `server/dev.ts`. React component edits
+are handled by Vite without restarting the Node server.
+
+React Compiler is enabled through `reactCompilerPreset()` and
+`@rolldown/plugin-babel` in `vite.config.ts`. It automatically memoizes eligible
+React components and hooks during development and production builds. The
+Babel compiler runs as development tooling; Babel is not shipped to browsers.
+React 19 supplies the compiler runtime. ESLint's recommended React Hooks rules
+include compiler diagnostics and check that components follow the Rules of React.
+
+Available validation commands:
 
 ```bash
-npm run dev
-npm run build
 npm run typecheck
-
 npm run lint
-npm run lint:fix
-
-npm run format
 npm run format:check
+npm run check
+npm run build
+```
 
+`build` checks types, then creates browser assets in `dist/client/` and the
+server renderer in `dist/server/`. These are build artifacts, not yet a
+deployable Vercel application; the Vercel SSR integration is a later step.
+Serving `dist/client/` as a static site alone does not provide SSR.
+
+The initial page is a minimal, unstyled placeholder. For `/`, the development
+server renders `src/app/App.tsx` into the HTML template through
+`src/entry-server.tsx`. The browser then hydrates that same component tree
+through `src/entry-client.tsx`. Unknown application paths return 404 until
+routing is added. Rendering is synchronous for now; no data fetching or
+streaming is configured.
+
+TypeScript configuration is split by runtime:
+
+- `tsconfig.base.json`: shared strict checks and the `@/` source alias.
+- `tsconfig.json`: browser code, with DOM types.
+- `tsconfig.server.json`: SSR and development server code, with Node types.
+- `tsconfig.node.json`: Vite tooling configuration, with Node types.
+
+Shared components imported by the SSR entry are also checked with the server
+settings. Vite resolves `@/` at runtime; the Node development server uses
+native Node imports instead of TypeScript aliases.
+
+ESLint uses a flat configuration in `eslint.config.js`, with recommended
+JavaScript, TypeScript, React Hooks, and React Compiler checks. Lint warnings
+fail the command so they are not silently accumulated. Type-aware ESLint rules
+are not enabled; the separate TypeScript command checks types.
+
+The current TypeScript ESLint parser requires the TypeScript 6 API. Following
+Microsoft's compatibility setup, npm aliases install TypeScript 7.0.2 as
+`@typescript/native` (providing `tsc`) and `@typescript/typescript6` as
+`typescript` (providing the API ESLint needs and the separate `tsc6` command).
+`npm run typecheck` and `npm run build` still use TypeScript 7.
+
+Prettier owns formatting, using its defaults with LF line endings.
+`eslint-config-prettier` disables conflicting formatting rules in ESLint;
+Prettier runs independently. Build output and local reference files are ignored,
+and the npm-generated lockfile is excluded from formatting.
+
+Apply automatic fixes or formatting:
+
+```bash
+npm run lint:fix
+npm run format
+```
+
+`npm run check` runs type checking, linting, and formatting verification without
+editing files. Tests will be added to this command when Vitest is configured.
+
+Additional planned scripts (to be added alongside their configuration):
+
+```bash
 npm run test
 npm run test:run
 npm run test:coverage
-
 npm run test:e2e
-
-npm run check
 ```
 
 ## Environment variables
