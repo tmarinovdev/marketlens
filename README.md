@@ -379,8 +379,8 @@ npm run build
 ```
 
 `build` checks types, then creates browser assets in `dist/client/` and the
-server renderer in `dist/server/`. These are build artifacts, not yet a
-deployable Vercel application; the Vercel SSR integration is a later step.
+server renderer in `dist/server/`. For a deployable Vercel artifact, use
+`npm run build:vercel`, followed by `npm run verify:vercel` to smoke-test it.
 Serving `dist/client/` as a static site alone does not provide SSR.
 
 The initial page is a minimal, unstyled placeholder. For `/`, the development
@@ -395,7 +395,7 @@ TypeScript configuration is split by runtime:
 - `tsconfig.base.json`: shared strict checks and the `@/` source alias.
 - `tsconfig.json`: browser code, with DOM types.
 - `tsconfig.server.json`: SSR and development server code, with Node types.
-- `tsconfig.node.json`: Vite tooling configuration, with Node types.
+- `tsconfig.node.json`: Vite configuration and build scripts, with Node types.
 
 Shared components imported by the SSR entry are also checked with the server
 settings. Vite resolves `@/` at runtime; the Node development server uses
@@ -486,6 +486,44 @@ Used for browser flows such as:
 - protected pages
 
 ## Deployment
+
+The custom SSR deployment uses Vercel's
+[Build Output API](https://vercel.com/docs/build-output-api). No additional
+framework or adapter dependency is required.
+
+`npm run build:vercel` builds the browser assets, then
+`scripts/build-vercel.ts` packages `.vercel/output/`:
+
+- `static/`: public browser assets, excluding the unfinished HTML template.
+- `functions/ssr.func/`: a bundled Node 24 function and its HTML template.
+- `config.json`: static-file routing, `/` to SSR, and a 404 fallback.
+
+`server/handler.ts` renders through the same `src/entry-server.tsx` used locally.
+React and other server dependencies are bundled into the function. Only the
+HTML template is reused across requests; rendered responses are not cached.
+`server/dev.ts` is for local development and is not included in this function.
+The build cleans only `.vercel/output/`, preserving Vercel project-link metadata.
+
+`npm run verify:vercel` starts the built handler on a temporary local port and
+checks rendered HTML, browser asset availability, GET/HEAD requests, unknown
+paths, and unsupported methods. This verifies the generated artifact locally;
+Vercel's routing and runtime must also be checked after the first deployment.
+
+Import `tmarinovdev/marketlens` in the Vercel dashboard with these settings:
+
+- Application Preset: **Other** (the app still builds with Vite).
+- Root Directory: repository root (`./`).
+- Build Command: use `vercel.json`; leave dashboard overrides off.
+- Output Directory: leave the override off; the Build Output API supplies it.
+- Install Command: use `vercel.json` (`npm ci`).
+- Node.js: **24.x**, also declared in `package.json`.
+- Environment Variables: none needed for the initial placeholder page.
+
+The repository's `vercel.json` runs checks, builds the deployment artifact, and
+verifies it before deployment. Production follows `main`; use branches and pull
+requests for preview deployments. Push the deployment configuration before
+clicking Deploy. After deployment, verify that View Page Source includes the
+MarketLens heading and that a nonexistent path returns HTTP 404.
 
 ```text
 Local development

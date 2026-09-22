@@ -7,6 +7,8 @@
     "dev": "node server/dev.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json && tsc -p tsconfig.node.json",
     "build": "npm run typecheck && vite build && vite build --ssr src/entry-server.tsx",
+    "build:vercel": "npm run typecheck && vite build && node scripts/build-vercel.ts",
+    "verify:vercel": "node scripts/verify-vercel.mjs",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix --max-warnings=0",
     "format": "prettier . --write",
