@@ -415,7 +415,9 @@ Microsoft's compatibility setup, npm aliases install TypeScript 7.0.2 as
 Prettier owns formatting, using its defaults with LF line endings.
 `eslint-config-prettier` disables conflicting formatting rules in ESLint;
 Prettier runs independently. Build output and local reference files are ignored,
-and the npm-generated lockfile is excluded from formatting.
+and npm's generated lockfile is excluded from formatting. `vercel.json` is also
+excluded because Vercel loads it as platform configuration before invoking the
+project's build command; Vercel validates that JSON separately.
 
 Apply automatic fixes or formatting:
 

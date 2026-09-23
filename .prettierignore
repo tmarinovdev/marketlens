@@ -1,3 +1,6 @@
 # Prettier also reads .gitignore, including local reference files and build output.
 # npm owns the formatting of its generated lockfile.
 package-lock.json
+
+# Vercel loads this orchestration file before running the configured build command.
+vercel.json
