@@ -45,8 +45,33 @@ try {
   assert.match(response.headers.get("content-type"), /text\/html/);
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   const html = await response.text();
-  assert.match(html, /<h1>MarketLens<\/h1>/);
+  assert.match(html, /<h1\b[^>]*>MarketLens<\/h1>/);
   assert.doesNotMatch(html, /ssr-outlet|@react-refresh|\/src\/entry-client/);
+
+  const stylesheetPreload = html.match(
+    /<link\b(?=[^>]*\brel="preload")(?=[^>]*\bas="style")(?=[^>]*\bhref="(\/assets\/[^"?#]+\.css)")[^>]*>/,
+  );
+  assert.ok(
+    stylesheetPreload,
+    "Rendered HTML must preload the built stylesheet",
+  );
+
+  const stylesheet = html.match(
+    /<link\b(?=[^>]*\brel="stylesheet")(?=[^>]*\bhref="(\/assets\/[^"?#]+\.css)")[^>]*>/,
+  );
+  assert.ok(stylesheet, "Rendered HTML must reference a built stylesheet");
+  assert.equal(
+    stylesheetPreload[1],
+    stylesheet[1],
+    "The preload and stylesheet links must use the same URL",
+  );
+  assert.ok(
+    stylesheetPreload.index < stylesheet.index,
+    "The stylesheet preload must appear before the stylesheet link",
+  );
+  await access(new URL(`static${stylesheet[1]}`, output));
+  await access(new URL("static/favicon.svg", output));
+  await access(new URL("static/site.webmanifest", output));
 
   const script = html.match(/src="(\/assets\/[^"?#]+\.js)"/);
   assert.ok(script, "Rendered HTML must reference a built browser script");
@@ -59,18 +84,18 @@ try {
   const about = await fetch(`${url}/about`);
   assert.equal(about.status, 200);
   const aboutHtml = await about.text();
-  assert.match(aboutHtml, /<h1>About MarketLens<\/h1>/);
+  assert.match(aboutHtml, /<h1\b[^>]*>About MarketLens<\/h1>/);
   assert.match(aboutHtml, /data-query-source="server"/);
   assert.match(aboutHtml, /query-integration-check/);
 
   const missing = await fetch(`${url}/missing`);
   assert.equal(missing.status, 404);
-  assert.match(await missing.text(), /<h1>Page not found<\/h1>/);
+  assert.match(await missing.text(), /<h1\b[^>]*>Page not found<\/h1>/);
   const post = await fetch(url, { method: "POST" });
   assert.equal(post.status, 405);
   assert.equal(post.headers.get("allow"), "GET, HEAD");
   console.log(
-    "Vercel artifact checks passed: SSR, assets, direct routes, router 404, HEAD, and methods.",
+    "Vercel artifact checks passed: SSR, scripts, styles, favicons, direct routes, router 404, HEAD, and methods.",
   );
 } finally {
   server.closeAllConnections();

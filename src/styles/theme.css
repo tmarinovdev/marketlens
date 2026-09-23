@@ -1,0 +1,217 @@
+:root {
+  --background: #fafafd;
+  --foreground: #111827;
+
+  --card: #ffffff;
+  --card-foreground: #111827;
+
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+
+  --primary: #6d28d9;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f5f3ff;
+  --secondary-foreground: #4c1d95;
+
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+
+  --accent: #ede9fe;
+  --accent-foreground: #4c1d95;
+
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #6d28d9;
+  --logo-color: #6d28d9;
+
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+
+  --surface-elevated: #ffffff;
+  --surface-subtle: #f5f3ff;
+
+  --primary-hover: #5b21b6;
+  --primary-strong: #4c1d95;
+  --primary-soft: #ede9fe;
+
+  --border-accent: #ddd6fe;
+
+  --positive: #15803d;
+  --positive-foreground: #14532d;
+  --positive-surface: #dcfce7;
+  --positive-chart: #16a34a;
+  --positive-chart-fill: rgba(22, 163, 74, 0.16);
+
+  --negative: #b91c1c;
+  --negative-foreground: #991b1b;
+  --negative-surface: #fee2e2;
+  --negative-chart: #dc2626;
+  --negative-chart-fill: rgba(220, 38, 38, 0.14);
+
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(109, 40, 217, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+
+  --chart-1: #6d28d9;
+  --chart-2: #15803d;
+  --chart-3: #b91c1c;
+  --chart-4: #2563eb;
+  --chart-5: #d97706;
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: #070e1d;
+  --foreground: #f8fafc;
+
+  --card: #0d1630;
+  --card-foreground: #f8fafc;
+
+  --popover: #111c3a;
+  --popover-foreground: #f8fafc;
+
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+
+  --secondary: #1b2340;
+  --secondary-foreground: #e9d5ff;
+
+  --muted: #182138;
+  --muted-foreground: #94a3b8;
+
+  --accent: #2a1f4d;
+  --accent-foreground: #ede9fe;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --border: #24304f;
+  --input: #2a3553;
+  --ring: #8b5cf6;
+  --logo-color: #a78bfa;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --surface-elevated: #111c3a;
+  --surface-subtle: #17152e;
+
+  --primary-hover: #a78bfa;
+  --primary-strong: #7c3aed;
+  --primary-soft: #2a1f4d;
+
+  --border-accent: #4c367a;
+
+  --positive: #4ade80;
+  --positive-foreground: #86efac;
+  --positive-surface: #0f2e1d;
+  --positive-chart: #22c55e;
+  --positive-chart-fill: rgba(34, 197, 94, 0.2);
+
+  --negative: #f87171;
+  --negative-foreground: #fca5a5;
+  --negative-surface: #3a161b;
+  --negative-chart: #ef4444;
+  --negative-chart-fill: rgba(239, 68, 68, 0.2);
+
+  --glass: rgba(17, 28, 58, 0.68);
+  --glass-strong: rgba(17, 28, 58, 0.88);
+  --glass-border: rgba(139, 92, 246, 0.3);
+  --glass-highlight: rgba(196, 181, 253, 0.12);
+
+  --chart-1: #8b5cf6;
+  --chart-2: #22c55e;
+  --chart-3: #ef4444;
+  --chart-4: #60a5fa;
+  --chart-5: #fbbf24;
+}
+
+/* shadcn currently uses @theme inline to expose the semantic CSS variables as Tailwind utilities. */
+@theme inline {
+  /* shadcn defaults */
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-logo: var(--logo-color);
+
+  /* MarketLens custom tokens */
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-subtle: var(--surface-subtle);
+
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+
+  --color-border-accent: var(--border-accent);
+
+  --color-positive: var(--positive);
+  --color-positive-foreground: var(--positive-foreground);
+  --color-positive-surface: var(--positive-surface);
+  --color-positive-chart: var(--positive-chart);
+  --color-positive-chart-fill: var(--positive-chart-fill);
+
+  --color-negative: var(--negative);
+  --color-negative-foreground: var(--negative-foreground);
+  --color-negative-surface: var(--negative-surface);
+  --color-negative-chart: var(--negative-chart);
+  --color-negative-chart-fill: var(--negative-chart-fill);
+
+  --color-glass: var(--glass);
+  --color-glass-strong: var(--glass-strong);
+  --color-glass-border: var(--glass-border);
+  --color-glass-highlight: var(--glass-highlight);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Radius */
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
