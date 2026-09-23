@@ -514,6 +514,9 @@ framework or adapter dependency is required.
 React, TanStack Router, and other server dependencies are bundled into the
 function. TanStack Router returns a Web API `Response`; the local and Vercel
 servers adapt it to Node's HTTP response without caching rendered pages.
+Split server chunks use `.mjs` because Vercel runs the function from an isolated
+directory without the repository's `package.json`; the explicit extension keeps
+Node's ESM interpretation consistent with the local build.
 `server/dev.ts` is for local development and is not included in the Vercel
 function. The build cleans only `.vercel/output/`, preserving Vercel
 project-link metadata.
@@ -521,8 +524,9 @@ project-link metadata.
 `npm run verify:vercel` starts the built handler on a temporary local port and
 checks rendered HTML, browser asset availability, the direct `/about` route,
 router-owned 404 responses, GET/HEAD requests, and unsupported methods. This
-verifies the generated artifact locally; Vercel's routing and runtime must also
-be checked after deployment.
+imports an isolated copy of the function without the repository's module type,
+then verifies the generated artifact locally. Vercel's routing and runtime must
+also be checked after deployment.
 
 Import `tmarinovdev/marketlens` in the Vercel dashboard with these settings:
 

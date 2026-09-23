@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
-import { createServer } from "node:http";
 import { once } from "node:events";
+import { access, cp, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { createServer } from "node:http";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const output = new URL("../.vercel/output/", import.meta.url);
+const functionSource = fileURLToPath(new URL("functions/ssr.func/", output));
 const config = JSON.parse(
   await readFile(new URL("config.json", output), "utf8"),
 );
@@ -12,8 +16,21 @@ await assert.rejects(access(new URL("static/index.html", output)), {
   code: "ENOENT",
 });
 
+const serverChunks = await readdir(join(functionSource, "assets"));
+assert.ok(serverChunks.length > 0, "The SSR function must contain its chunks");
+assert.ok(
+  serverChunks.every((file) => file.endsWith(".mjs")),
+  "Every JavaScript server chunk must use an explicit ESM extension",
+);
+
+// Vercel runs the function from /var/task without the repository package.json.
+// Import an isolated copy so local module resolution cannot hide ESM mistakes.
+const isolatedFunction = await mkdtemp(
+  join(tmpdir(), "marketlens-vercel-function-"),
+);
+await cp(functionSource, isolatedFunction, { recursive: true });
 const { default: handler } = await import(
-  new URL("functions/ssr.func/index.mjs", output).href
+  pathToFileURL(join(isolatedFunction, "index.mjs")).href
 );
 const server = createServer(handler);
 server.listen(0, "127.0.0.1");
@@ -57,4 +74,5 @@ try {
   await new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   });
+  await rm(isolatedFunction, { recursive: true, force: true });
 }

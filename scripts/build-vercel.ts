@@ -23,7 +23,13 @@ await build({
     outDir: functionDirectory,
     target: "node24",
     rollupOptions: {
-      output: { entryFileNames: "index.mjs" },
+      // Vercel copies this directory to /var/task without the repository's
+      // package.json. Use explicit ESM extensions so Node does not interpret
+      // split server chunks as CommonJS in that isolated directory.
+      output: {
+        entryFileNames: "index.mjs",
+        chunkFileNames: "assets/[name]-[hash].mjs",
+      },
     },
   },
 });
