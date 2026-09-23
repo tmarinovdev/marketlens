@@ -398,6 +398,19 @@ browser chunks. Router packages are pinned to exact versions because the
 standalone SSR APIs are currently experimental and should be upgraded
 deliberately.
 
+TanStack Query is connected through its Router SSR integration. Every router
+creation also creates a fresh `QueryClient`, which isolates server requests and
+keeps one client cache for the lifetime of the browser router. Route loaders
+prefetch critical data with shared query options, and components read the same
+cache through Query hooks. The integration provides `QueryClientProvider`,
+dehydrates server results, hydrates them in the browser, and clears the
+request-scoped server cache after rendering.
+
+Queries default to a 30-second `staleTime` so freshly hydrated data does not
+immediately refetch. Router preload freshness is zero, leaving TanStack Query to
+decide whether cached data is still fresh. Individual market queries can define
+their own polling and freshness policies later.
+
 TypeScript configuration is split by runtime:
 
 - `tsconfig.base.json`: shared strict checks and the `@/` source alias.

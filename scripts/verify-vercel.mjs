@@ -58,7 +58,10 @@ try {
   assert.equal((await fetch(`${url}/?example=1`)).status, 200);
   const about = await fetch(`${url}/about`);
   assert.equal(about.status, 200);
-  assert.match(await about.text(), /<h1>About MarketLens<\/h1>/);
+  const aboutHtml = await about.text();
+  assert.match(aboutHtml, /<h1>About MarketLens<\/h1>/);
+  assert.match(aboutHtml, /data-query-source="server"/);
+  assert.match(aboutHtml, /query-integration-check/);
 
   const missing = await fetch(`${url}/missing`);
   assert.equal(missing.status, 404);
