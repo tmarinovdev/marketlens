@@ -39,12 +39,18 @@ try {
   assert.equal(head.status, 200);
   assert.equal(await head.text(), "");
   assert.equal((await fetch(`${url}/?example=1`)).status, 200);
-  assert.equal((await fetch(`${url}/missing`)).status, 404);
+  const about = await fetch(`${url}/about`);
+  assert.equal(about.status, 200);
+  assert.match(await about.text(), /<h1>About MarketLens<\/h1>/);
+
+  const missing = await fetch(`${url}/missing`);
+  assert.equal(missing.status, 404);
+  assert.match(await missing.text(), /<h1>Page not found<\/h1>/);
   const post = await fetch(url, { method: "POST" });
   assert.equal(post.status, 405);
   assert.equal(post.headers.get("allow"), "GET, HEAD");
   console.log(
-    "Vercel artifact checks passed: SSR, assets, routing, HEAD, and methods.",
+    "Vercel artifact checks passed: SSR, assets, direct routes, router 404, HEAD, and methods.",
   );
 } finally {
   server.closeAllConnections();

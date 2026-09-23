@@ -1,11 +1,11 @@
-import { StrictMode } from "react";
-import { renderToString } from "react-dom/server";
-import { App } from "@/app/App";
+import {
+  createRequestHandler,
+  defaultRenderHandler,
+} from "@tanstack/react-router/ssr/server";
+import { createRouter } from "@/app/router";
 
-export function render(): string {
-  return renderToString(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
+export function render({ request }: { request: Request }): Promise<Response> {
+  const handler = createRequestHandler({ request, createRouter });
+
+  return handler(defaultRenderHandler);
 }

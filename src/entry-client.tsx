@@ -1,16 +1,7 @@
-import { StrictMode } from "react";
+import { RouterClient } from "@tanstack/react-router/ssr/client";
 import { hydrateRoot } from "react-dom/client";
-import { App } from "@/app/App";
+import { createRouter } from "@/app/router";
 
-const root = document.getElementById("root");
+const router = createRouter();
 
-if (!root) {
-  throw new Error("The root element is missing from the HTML template.");
-}
-
-hydrateRoot(
-  root,
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+hydrateRoot(document, <RouterClient router={router} />);

@@ -28,7 +28,6 @@ await build({
   },
 });
 
-await cp(join(client, "index.html"), join(functionDirectory, "index.html"));
 await mkdir(join(output, "static"), { recursive: true });
 for (const entry of await readdir(client)) {
   // The unrendered HTML template must never be served as a static homepage.
@@ -51,11 +50,7 @@ await writeJson(join(functionDirectory, ".vc-config.json"), {
 });
 await writeJson(join(output, "config.json"), {
   version: 3,
-  routes: [
-    { handle: "filesystem" },
-    { src: "/", dest: "/ssr" },
-    { src: "/.*", status: 404 },
-  ],
+  routes: [{ handle: "filesystem" }, { src: "/.*", dest: "/ssr" }],
 });
 
 console.log("Vercel deployment output created in .vercel/output");

@@ -1,11 +1,10 @@
-import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import type { IncomingMessage, ServerResponse } from "node:http";
+import type { ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
 import { createServer as createViteServer } from "vite";
+import { sendWebResponse, toWebRequest } from "./node-http.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const templatePath = new URL("../index.html", import.meta.url);
 const server = createServer();
 const vite = await createViteServer({
   root,
@@ -15,44 +14,6 @@ const vite = await createViteServer({
     hmr: { server },
   },
 });
-
-async function renderPage(request: IncomingMessage, response: ServerResponse) {
-  const url = request.url ?? "/";
-  const pathname = new URL(url, "http://localhost").pathname;
-
-  if (pathname !== "/") {
-    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-    response.end("Not found");
-    return;
-  }
-
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    response.writeHead(405, { Allow: "GET, HEAD" });
-    response.end();
-    return;
-  }
-
-  const template = await vite.transformIndexHtml(
-    url,
-    await readFile(templatePath, "utf-8"),
-  );
-  const { render } = await vite.ssrLoadModule("/src/entry-server.tsx");
-  // Vite's dynamic module loader is untyped, so validate its export at the boundary.
-  if (typeof render !== "function") {
-    throw new Error("The SSR entry must export a render function.");
-  }
-  const markup: unknown = render();
-  if (typeof markup !== "string") {
-    throw new Error("The SSR render function must return HTML.");
-  }
-
-  const html = template.replace("<!--ssr-outlet-->", () => markup);
-  response.writeHead(200, {
-    "Content-Type": "text/html; charset=utf-8",
-    "Cache-Control": "no-store",
-  });
-  response.end(request.method === "HEAD" ? undefined : html);
-}
 
 function handleError(error: unknown, response: ServerResponse) {
   if (error instanceof Error) vite.ssrFixStacktrace(error);
@@ -69,9 +30,35 @@ server.on("request", (request, response) => {
       handleError(error, response);
       return;
     }
-    void renderPage(request, response).catch((error: unknown) => {
-      handleError(error, response);
-    });
+    void (async () => {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        response.writeHead(405, { Allow: "GET, HEAD" });
+        response.end();
+        return;
+      }
+
+      const module: unknown = await vite.ssrLoadModule("/src/entry-server.tsx");
+      if (
+        typeof module !== "object" ||
+        module === null ||
+        !("render" in module) ||
+        typeof module.render !== "function"
+      ) {
+        throw new Error("The SSR entry must export a render function.");
+      }
+
+      const result: unknown = await module.render({
+        request: toWebRequest(request),
+      });
+      if (!(result instanceof Response)) {
+        throw new Error("The SSR render function must return a Response.");
+      }
+
+      await sendWebResponse(result, response, {
+        head: request.method === "HEAD",
+        cacheControl: "no-store",
+      });
+    })().catch((error: unknown) => handleError(error, response));
   });
 });
 

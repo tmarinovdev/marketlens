@@ -15,6 +15,7 @@ export default defineConfig([
     "blob-report/**",
     ".vercel/**",
     "_files/**",
+    "src/routeTree.gen.ts",
   ]),
   {
     files: ["**/*.{js,mjs,ts,tsx}"],

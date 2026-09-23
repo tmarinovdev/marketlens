@@ -4,3 +4,6 @@ package-lock.json
 
 # Vercel loads this orchestration file before running the configured build command.
 vercel.json
+
+# Generated and maintained by the TanStack Router Vite plugin.
+src/routeTree.gen.ts

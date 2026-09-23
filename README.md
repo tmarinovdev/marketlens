@@ -383,18 +383,27 @@ server renderer in `dist/server/`. For a deployable Vercel artifact, use
 `npm run build:vercel`, followed by `npm run verify:vercel` to smoke-test it.
 Serving `dist/client/` as a static site alone does not provide SSR.
 
-The initial page is a minimal, unstyled placeholder. For `/`, the development
-server renders `src/app/App.tsx` into the HTML template through
-`src/entry-server.tsx`. The browser then hydrates that same component tree
-through `src/entry-client.tsx`. Unknown application paths return 404 until
-routing is added. Rendering is synchronous for now; no data fetching or
-streaming is configured.
+The initial pages are minimal, unstyled placeholders. TanStack Router owns the
+HTML document, route matching, document metadata, and not-found response. The
+server creates a fresh router for every request through `src/entry-server.tsx`;
+the browser creates its own router and hydrates the document through
+`src/entry-client.tsx`. `/about` is a small second route used to verify direct
+SSR requests and client navigation. Rendering is non-streaming for now, and no
+data fetching is configured.
+
+Routes use TanStack Router's file-based convention under `src/routes/`. Its Vite
+plugin generates `src/routeTree.gen.ts`; commit that file, but do not edit or
+format it manually. The plugin also splits route components into separate
+browser chunks. Router packages are pinned to exact versions because the
+standalone SSR APIs are currently experimental and should be upgraded
+deliberately.
 
 TypeScript configuration is split by runtime:
 
 - `tsconfig.base.json`: shared strict checks and the `@/` source alias.
 - `tsconfig.json`: browser code, with DOM types.
-- `tsconfig.server.json`: SSR and development server code, with Node types.
+- `tsconfig.server.json`: SSR and development server code, with Node and Vite
+  environment types.
 - `tsconfig.node.json`: Vite configuration and build scripts, with Node types.
 
 Shared components imported by the SSR entry are also checked with the server
@@ -496,20 +505,24 @@ framework or adapter dependency is required.
 `npm run build:vercel` builds the browser assets, then
 `scripts/build-vercel.ts` packages `.vercel/output/`:
 
-- `static/`: public browser assets, excluding the unfinished HTML template.
-- `functions/ssr.func/`: a bundled Node 24 function and its HTML template.
-- `config.json`: static-file routing, `/` to SSR, and a 404 fallback.
+- `static/`: public browser assets, excluding Vite's build-only HTML entry.
+- `functions/ssr.func/`: the bundled Node 24 SSR function.
+- `config.json`: static-file routing followed by an SSR fallback for application
+  URLs.
 
 `server/handler.ts` renders through the same `src/entry-server.tsx` used locally.
-React and other server dependencies are bundled into the function. Only the
-HTML template is reused across requests; rendered responses are not cached.
-`server/dev.ts` is for local development and is not included in this function.
-The build cleans only `.vercel/output/`, preserving Vercel project-link metadata.
+React, TanStack Router, and other server dependencies are bundled into the
+function. TanStack Router returns a Web API `Response`; the local and Vercel
+servers adapt it to Node's HTTP response without caching rendered pages.
+`server/dev.ts` is for local development and is not included in the Vercel
+function. The build cleans only `.vercel/output/`, preserving Vercel
+project-link metadata.
 
 `npm run verify:vercel` starts the built handler on a temporary local port and
-checks rendered HTML, browser asset availability, GET/HEAD requests, unknown
-paths, and unsupported methods. This verifies the generated artifact locally;
-Vercel's routing and runtime must also be checked after the first deployment.
+checks rendered HTML, browser asset availability, the direct `/about` route,
+router-owned 404 responses, GET/HEAD requests, and unsupported methods. This
+verifies the generated artifact locally; Vercel's routing and runtime must also
+be checked after deployment.
 
 Import `tmarinovdev/marketlens` in the Vercel dashboard with these settings:
 
