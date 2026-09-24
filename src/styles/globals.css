@@ -23,3 +23,51 @@
     @apply min-h-svh bg-background font-sans text-foreground antialiased;
   }
 }
+
+@layer components {
+  .site-menu-trigger {
+    anchor-name: --site-menu-trigger;
+  }
+
+  .site-menu-popover {
+    position: fixed;
+    inset: auto;
+    top: 4.75rem;
+    right: 1rem;
+    margin: 0;
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.98);
+    transform-origin: top right;
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease,
+      display 120ms allow-discrete,
+      overlay 120ms allow-discrete;
+  }
+
+  .site-menu-popover:popover-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  @starting-style {
+    .site-menu-popover:popover-open {
+      opacity: 0;
+      transform: translateY(-0.25rem) scale(0.98);
+    }
+  }
+
+  @supports (top: anchor(bottom)) {
+    .site-menu-popover {
+      position-anchor: --site-menu-trigger;
+      top: calc(anchor(bottom) + 0.5rem);
+      right: anchor(right);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-menu-popover {
+    transition: none;
+  }
+}

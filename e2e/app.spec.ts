@@ -17,6 +17,14 @@ test("renders the dashboard on the server and hydrates navigation", async ({
   await page.waitForLoadState("networkidle");
   const initialDocumentTime = await page.evaluate(() => performance.timeOrigin);
 
+  await expect(
+    page.getByRole("searchbox", { name: "Search financial instruments" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Toggle color theme" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+
+  await page.getByRole("button", { name: "Open site menu" }).click();
   await page.getByRole("link", { name: "About" }).click();
 
   await expect(page).toHaveURL(/\/about$/);

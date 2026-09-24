@@ -6,6 +6,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
+import { SiteHeader } from "@/components/layout/site-header";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -17,6 +18,7 @@ const stylesheetHref = import.meta.env.PROD
 const interFontHref = import.meta.env.PROD
   ? "/assets/inter-latin-wght-normal.woff2"
   : "/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2";
+const themeScript = `try{if(localStorage.getItem("marketlens-theme")==="dark"){document.documentElement.classList.add("dark")}}catch{}`;
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
@@ -67,8 +69,9 @@ window.__vite_plugin_react_preamble_installed__ = true`,
 
 function RootDocument() {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link
           rel="preload"
           href={interFontHref}
@@ -81,26 +84,7 @@ function RootDocument() {
         <HeadContent />
       </head>
       <body>
-        <header className="border-b bg-card">
-          <nav
-            aria-label="Primary navigation"
-            className="mx-auto flex max-w-5xl items-center gap-5 px-6 py-4"
-          >
-            <Link
-              to="/"
-              activeOptions={{ exact: true }}
-              className="font-semibold text-foreground hover:text-primary"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/about"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              About
-            </Link>
-          </nav>
-        </header>
+        <SiteHeader />
         <Outlet />
         <Scripts />
       </body>
