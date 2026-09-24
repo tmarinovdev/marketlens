@@ -117,6 +117,7 @@ Used for:
 - shadcn/ui
 - Lucide
 - dnd-kit
+- self-hosted Inter variable font
 
 ### Charts
 
@@ -229,6 +230,11 @@ Visual direction:
 - restrained shadows
 - purple brand accents
 - WCAG-conscious contrast
+
+Typography uses the Latin-only normal Inter variable face from Fontsource. Vite
+bundles the WOFF2 asset locally, and SSR preloads the emitted font before the
+main stylesheet. The font remains self-hosted; no browser request is sent to a
+third-party font CDN. Its OFL 1.1 license is preserved under `licenses/`.
 
 ### Light palette
 
@@ -374,8 +380,13 @@ Available validation commands:
 npm run typecheck
 npm run lint
 npm run format:check
+npm run test:run
+npm run test:coverage
+npm run test:e2e
 npm run check
 npm run build
+npm run build:vercel
+npm run verify:vercel
 ```
 
 `build` checks types, then creates browser assets in `dist/client/` and the
@@ -383,13 +394,14 @@ server renderer in `dist/server/`. For a deployable Vercel artifact, use
 `npm run build:vercel`, followed by `npm run verify:vercel` to smoke-test it.
 Serving `dist/client/` as a static site alone does not provide SSR.
 
-The initial pages are minimal, unstyled placeholders. TanStack Router owns the
-HTML document, route matching, document metadata, and not-found response. The
+The initial pages are small styled integration surfaces. TanStack Router owns
+the HTML document, route matching, document metadata, and not-found response. The
 server creates a fresh router for every request through `src/entry-server.tsx`;
 the browser creates its own router and hydrates the document through
 `src/entry-client.tsx`. `/about` is a small second route used to verify direct
-SSR requests and client navigation. Rendering is non-streaming for now, and no
-data fetching is configured.
+SSR requests and client navigation. Rendering is non-streaming for now, and the
+About route uses a small in-memory query to verify server prefetch and browser
+hydration.
 
 Routes use TanStack Router's file-based convention under `src/routes/`. Its Vite
 plugin generates `src/routeTree.gen.ts`; commit that file, but do not edit or
@@ -448,17 +460,11 @@ npm run lint:fix
 npm run format
 ```
 
-`npm run check` runs type checking, linting, and formatting verification without
-editing files. Tests will be added to this command when Vitest is configured.
+`npm run check` runs type checking, linting, formatting verification, and the
+Vitest unit/component suite without editing files.
 
-Additional planned scripts (to be added alongside their configuration):
-
-```bash
-npm run test
-npm run test:run
-npm run test:coverage
-npm run test:e2e
-```
+`npm run test` starts Vitest in watch mode. `npm run test:e2e` starts the local
+SSR development server and runs the Playwright Chromium suite against it.
 
 ## Environment variables
 
@@ -492,6 +498,10 @@ Used for:
 - query logic
 - component behavior
 
+Vitest uses jsdom for fast component tests. React Testing Library assertions
+focus on accessible roles and user-visible behavior. Coverage uses V8 and is
+available through `npm run test:coverage` without an arbitrary initial threshold.
+
 ### React Testing Library
 
 Used for user-facing component and integration tests.
@@ -508,6 +518,21 @@ Used for browser flows such as:
 - light/dark switching
 - registration/login/logout
 - protected pages
+
+The initial Chromium suite verifies SSR output, hydrated client navigation,
+direct route data, the self-hosted font, and router-owned 404 responses.
+
+## Continuous integration
+
+GitHub Actions runs the `CI / Validate` job for pull requests targeting `main`,
+pushes to `main`, and manual workflow runs. It uses Node.js 24 and the npm
+lockfile to run code checks, unit/component tests, the Vercel production build
+and verifier, and Chromium Playwright tests. Failed browser runs retain their
+HTML report for 14 days.
+
+Vercel remains responsible for preview and production deployments through its
+Git integration. GitHub Actions validates changes; it does not store Vercel
+credentials or create a second deployment.
 
 ## Deployment
 

@@ -48,6 +48,11 @@ try {
   assert.match(html, /<h1\b[^>]*>MarketLens<\/h1>/);
   assert.doesNotMatch(html, /ssr-outlet|@react-refresh|\/src\/entry-client/);
 
+  const fontPreload = html.match(
+    /<link\b(?=[^>]*\brel="preload")(?=[^>]*\bas="font")(?=[^>]*\btype="font\/woff2")(?=[^>]*\bcrossorigin="anonymous")(?=[^>]*\bhref="(\/assets\/inter-latin-wght-normal\.woff2)")[^>]*>/,
+  );
+  assert.ok(fontPreload, "Rendered HTML must preload the Inter font");
+
   const stylesheetPreload = html.match(
     /<link\b(?=[^>]*\brel="preload")(?=[^>]*\bas="style")(?=[^>]*\bhref="(\/assets\/[^"?#]+\.css)")[^>]*>/,
   );
@@ -69,7 +74,16 @@ try {
     stylesheetPreload.index < stylesheet.index,
     "The stylesheet preload must appear before the stylesheet link",
   );
+  assert.ok(
+    fontPreload.index < stylesheet.index,
+    "The font preload must appear before the stylesheet link",
+  );
+  await access(new URL(`static${fontPreload[1]}`, output));
   await access(new URL(`static${stylesheet[1]}`, output));
+  assert.match(
+    await readFile(new URL(`static${stylesheet[1]}`, output), "utf8"),
+    /inter-latin-wght-normal\.woff2/,
+  );
   await access(new URL("static/favicon.svg", output));
   await access(new URL("static/site.webmanifest", output));
 
@@ -95,7 +109,7 @@ try {
   assert.equal(post.status, 405);
   assert.equal(post.headers.get("allow"), "GET, HEAD");
   console.log(
-    "Vercel artifact checks passed: SSR, scripts, styles, favicons, direct routes, router 404, HEAD, and methods.",
+    "Vercel artifact checks passed: SSR, scripts, styles, fonts, favicons, direct routes, router 404, HEAD, and methods.",
   );
 } finally {
   server.closeAllConnections();

@@ -24,10 +24,17 @@ export default defineConfig(({ isSsrBuild }) => ({
       : {
           output: {
             entryFileNames: "assets/entry-client.js",
-            assetFileNames: (assetInfo) =>
-              assetInfo.names.some((name) => name.endsWith(".css"))
-                ? "assets/styles.css"
-                : "assets/[name]-[hash][extname]",
+            assetFileNames: (assetInfo) => {
+              if (assetInfo.names.some((name) => name.endsWith(".css"))) {
+                return "assets/styles.css";
+              }
+
+              if (assetInfo.names.includes("inter-latin-wght-normal.woff2")) {
+                return "assets/inter-latin-wght-normal.woff2";
+              }
+
+              return "assets/[name]-[hash][extname]";
+            },
           },
         },
   },

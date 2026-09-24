@@ -138,6 +138,10 @@
 @theme inline {
   /* shadcn defaults */
 
+  --font-sans:
+    "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 

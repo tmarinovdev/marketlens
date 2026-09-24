@@ -72,11 +72,25 @@ server.listen(5173, "127.0.0.1", () => {
   console.log("MarketLens: http://127.0.0.1:5173");
 });
 
+let shuttingDown = false;
+
 async function shutdown() {
-  await vite.close();
-  server.close();
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  const serverClosed = new Promise<void>((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
   server.closeAllConnections();
+  await Promise.all([vite.close(), serverClosed]);
 }
 
-process.once("SIGINT", shutdown);
-process.once("SIGTERM", shutdown);
+function handleShutdownSignal() {
+  void shutdown().catch((error: unknown) => {
+    console.error("Development server shutdown failed:", error);
+    process.exitCode = 1;
+  });
+}
+
+process.once("SIGINT", handleShutdownSignal);
+process.once("SIGTERM", handleShutdownSignal);

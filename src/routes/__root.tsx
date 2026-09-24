@@ -14,6 +14,9 @@ interface RouterContext {
 const stylesheetHref = import.meta.env.PROD
   ? "/assets/styles.css"
   : "/src/styles/globals.css";
+const interFontHref = import.meta.env.PROD
+  ? "/assets/inter-latin-wght-normal.woff2"
+  : "/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
@@ -66,6 +69,13 @@ function RootDocument() {
   return (
     <html lang="en">
       <head>
+        <link
+          rel="preload"
+          href={interFontHref}
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <link rel="preload" href={stylesheetHref} as="style" />
         <link rel="stylesheet" href={stylesheetHref} />
         <HeadContent />
