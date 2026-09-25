@@ -9,6 +9,7 @@
     "build": "npm run typecheck && vite build && vite build --ssr src/entry-server.tsx",
     "build:vercel": "npm run typecheck && vite build && node scripts/build-vercel.ts",
     "verify:vercel": "node scripts/verify-vercel.mjs",
+    "env:check": "node scripts/check-env.ts",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix --max-warnings=0",
     "format": "prettier . --write",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.3.0",
+    "@supabase/supabase-js": "2.117.2",
     "@tanstack/react-query": "5.103.2",
     "@tanstack/react-router": "1.170.38",
     "@tanstack/react-router-ssr-query": "1.167.3",
@@ -32,7 +34,8 @@
     "lucide-react": "1.48.0",
     "radix-ui": "1.6.7",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@babel/core": "8.0.6",

@@ -468,21 +468,40 @@ SSR development server and runs the Playwright Chromium suite against it.
 
 ## Environment variables
 
-Final names depend on the selected market-data provider.
+Copy the committed template to the ignored local environment file:
 
-Typical categories:
-
-```text
-Supabase public URL
-Supabase browser-safe anon key
-
-Market-data provider secret API key
-Server-only configuration
+```bash
+cp .env.example .env.local
 ```
 
-Private provider credentials must never be exposed to browser bundles.
+On PowerShell:
 
-A `.env.example` should be added once the environment contract is finalized.
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Fill in these values locally:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SECRET_KEY
+ALPACA_API_KEY
+ALPACA_API_SECRET
+```
+
+Validate them without printing their values:
+
+```bash
+npm run env:check
+```
+
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are intentionally
+browser-safe. All other variables are server-only and must never receive a
+`VITE_` prefix. Browser and server modules validate their own environment
+boundaries with Zod. The local Node SSR server loads `.env.local`; Vercel injects
+the configured environment values at runtime. Normal CI tests use fixtures and
+do not require real credentials.
 
 ## Testing strategy
 
@@ -707,7 +726,7 @@ Examples:
 ```text
 ALPACA_API_KEY
 ALPACA_API_SECRET
-SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_SECRET_KEY
 ```
 
 ### Browser-safe public configuration

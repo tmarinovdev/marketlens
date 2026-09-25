@@ -1,10 +1,25 @@
 import { createServer } from "node:http";
 import type { ServerResponse } from "node:http";
+import { loadEnvFile } from "node:process";
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { createServer as createViteServer } from "vite";
 import { sendWebResponse, toWebRequest } from "./node-http.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+
+try {
+  loadEnvFile(resolve(root, ".env.local"));
+} catch (error) {
+  if (
+    !(error instanceof Error) ||
+    !("code" in error) ||
+    error.code !== "ENOENT"
+  ) {
+    throw error;
+  }
+}
+
 const server = createServer();
 const vite = await createViteServer({
   root,
