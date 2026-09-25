@@ -545,6 +545,18 @@ not deactivate existing search results; rerunning the command is safe.
 The catalog stores reference metadata only. Prices, historical bars, and logos
 are fetched separately and are not persisted by this command.
 
+Production also schedules the same synchronization every Sunday at 03:00 UTC
+through Vercel Cron. The Build Output API emits a dedicated Node function at
+`/api/cron/sync-instruments`, with a 60-second maximum duration. Vercel invokes
+cron jobs only for production deployments.
+
+The endpoint requires an exact `Authorization: Bearer <CRON_SECRET>` header.
+Set a random value of at least 16 characters as `CRON_SECRET` in the Vercel
+Production environment; Vercel automatically sends it with scheduled requests.
+The Alpaca and server-side Supabase credentials must also be configured in the
+Production environment. Requests with a missing or invalid token return `401`
+without running the synchronization.
+
 ## Testing strategy
 
 ### Vitest
@@ -769,6 +781,7 @@ Examples:
 ALPACA_API_KEY
 ALPACA_API_SECRET
 SUPABASE_SECRET_KEY
+CRON_SECRET
 ```
 
 ### Browser-safe public configuration

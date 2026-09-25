@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { parseServerEnv } from "./env.ts";
+import { parseCronEnv, parseServerEnv } from "./env.ts";
 
 const validServerEnv = {
   VITE_SUPABASE_URL: "https://example.supabase.co",
@@ -23,5 +23,21 @@ describe("parseServerEnv", () => {
         SUPABASE_SECRET_KEY: "sb_publishable_wrong_boundary",
       }),
     ).toThrowError("Invalid server environment");
+  });
+
+  it("requires a sufficiently long secret for cron execution", () => {
+    expect(() =>
+      parseCronEnv({ ...validServerEnv, CRON_SECRET: "too-short" }),
+    ).toThrowError("Invalid cron environment");
+
+    expect(
+      parseCronEnv({
+        VITE_SUPABASE_URL: validServerEnv.VITE_SUPABASE_URL,
+        SUPABASE_SECRET_KEY: validServerEnv.SUPABASE_SECRET_KEY,
+        ALPACA_API_KEY: validServerEnv.ALPACA_API_KEY,
+        ALPACA_API_SECRET: validServerEnv.ALPACA_API_SECRET,
+        CRON_SECRET: "a-random-secret-with-32-characters",
+      }).CRON_SECRET,
+    ).toBe("a-random-secret-with-32-characters");
   });
 });

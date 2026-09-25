@@ -8,10 +8,24 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const output = new URL("../.vercel/output/", import.meta.url);
 const functionSource = fileURLToPath(new URL("functions/ssr.func/", output));
+const cronFunctionSource = fileURLToPath(
+  new URL("functions/api/cron/sync-instruments.func/", output),
+);
 const config = JSON.parse(
   await readFile(new URL("config.json", output), "utf8"),
 );
 assert.equal(config.version, 3);
+assert.deepEqual(config.crons, [
+  {
+    path: "/api/cron/sync-instruments",
+    schedule: "0 3 * * 0",
+  },
+]);
+const cronFunctionConfig = JSON.parse(
+  await readFile(join(cronFunctionSource, ".vc-config.json"), "utf8"),
+);
+assert.equal(cronFunctionConfig.runtime, "nodejs24.x");
+assert.equal(cronFunctionConfig.maxDuration, 60);
 await assert.rejects(access(new URL("static/index.html", output)), {
   code: "ENOENT",
 });
@@ -117,4 +131,37 @@ try {
     server.close((error) => (error ? reject(error) : resolve()));
   });
   await rm(isolatedFunction, { recursive: true, force: true });
+}
+
+const isolatedCronFunction = await mkdtemp(
+  join(tmpdir(), "marketlens-vercel-cron-function-"),
+);
+await cp(cronFunctionSource, isolatedCronFunction, { recursive: true });
+const { default: cronHandler } = await import(
+  pathToFileURL(join(isolatedCronFunction, "index.mjs")).href
+);
+const cronServer = createServer(cronHandler);
+cronServer.listen(0, "127.0.0.1");
+await once(cronServer, "listening");
+
+try {
+  const address = cronServer.address();
+  assert.ok(address && typeof address !== "string");
+  const url = `http://127.0.0.1:${address.port}`;
+  const unauthorized = await fetch(url);
+  assert.equal(unauthorized.status, 401);
+  assert.deepEqual(await unauthorized.json(), { success: false });
+
+  const post = await fetch(url, { method: "POST" });
+  assert.equal(post.status, 405);
+  assert.equal(post.headers.get("allow"), "GET");
+  console.log(
+    "Vercel cron checks passed: schedule, runtime, duration, authentication, and methods.",
+  );
+} finally {
+  cronServer.closeAllConnections();
+  await new Promise((resolve, reject) => {
+    cronServer.close((error) => (error ? reject(error) : resolve()));
+  });
+  await rm(isolatedCronFunction, { recursive: true, force: true });
 }
