@@ -503,6 +503,48 @@ boundaries with Zod. The local Node SSR server loads `.env.local`; Vercel inject
 the configured environment values at runtime. Normal CI tests use fixtures and
 do not require real credentials.
 
+### Database migrations
+
+The Supabase CLI is pinned as a project development dependency. Database changes
+belong in `supabase/migrations/` and are committed with the application code;
+do not create application tables manually in Supabase Studio.
+
+Run CLI commands through the local package:
+
+```bash
+npm exec supabase -- --version
+npm exec supabase -- link --project-ref <project-ref>
+npm exec supabase -- db push --dry-run
+npm exec supabase -- db push
+```
+
+The initial catalog migration creates a read-only public instrument catalog and
+a ranked `search_instruments` function. Only the server-side Supabase secret key
+may synchronize catalog rows. `supabase/seed.sql` contains local development data
+and is not included in a normal remote `db push`.
+
+Running the full Supabase stack locally requires Docker. Until that becomes
+useful for authentication and database integration tests, migrations can be
+reviewed with `db push --dry-run` and applied to the linked development project.
+
+### Instrument catalog synchronization
+
+Synchronize active US equity and ETF reference records from Alpaca into the
+Supabase instrument catalog:
+
+```bash
+npm run sync:instruments
+```
+
+The command runs only in Node, loads secrets from the ignored `.env.local`,
+validates Alpaca's response with Zod, and writes through the server-only
+Supabase secret key. It upserts bounded batches and deactivates catalog entries
+that disappeared from a successful Alpaca response. A failed partial run does
+not deactivate existing search results; rerunning the command is safe.
+
+The catalog stores reference metadata only. Prices, historical bars, and logos
+are fetched separately and are not persisted by this command.
+
 ## Testing strategy
 
 ### Vitest

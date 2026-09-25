@@ -7,3 +7,7 @@ vercel.json
 
 # Generated and maintained by the TanStack Router Vite plugin.
 src/routeTree.gen.ts
+
+# Generated local Supabase CLI state.
+supabase/.temp/
+supabase/.branches/
