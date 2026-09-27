@@ -10,7 +10,11 @@ import {
 
 const searchDelay = 250;
 
-export function InstrumentSearch() {
+interface InstrumentSearchProps {
+  readonly onSelect?: (instrument: InstrumentSearchResult) => void;
+}
+
+export function InstrumentSearch({ onSelect }: InstrumentSearchProps) {
   const listboxId = useId();
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +34,8 @@ export function InstrumentSearch() {
   const activeResult = results[activeIndex];
 
   function selectInstrument(instrument: InstrumentSearchResult) {
-    setInputValue(instrument.symbol);
+    onSelect?.(instrument);
+    setInputValue("");
     setActiveIndex(-1);
     setIsOpen(false);
   }

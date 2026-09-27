@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Info, LogIn, Menu, Moon, Sun, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstrumentSearch } from "@/features/instruments/components/instrument-search";
+import { useWatchlistStore } from "@/features/watchlist/store/watchlist-store";
 
 const themeStorageKey = "marketlens-theme";
 
@@ -28,8 +29,10 @@ function toggleTheme() {
 }
 
 export function SiteHeader() {
+  const addInstrument = useWatchlistStore((state) => state.addInstrument);
+
   return (
-    <header className="px-3 pt-3 sm:px-5 sm:pt-5">
+    <header className="relative z-50 px-3 pt-3 sm:px-5 sm:pt-5">
       <nav
         aria-label="Primary navigation"
         className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-glass-border bg-glass-strong px-4 py-3 shadow-sm backdrop-blur-xl lg:grid-cols-[minmax(12rem,1fr)_minmax(18rem,2fr)_1fr] lg:px-5"
@@ -51,7 +54,7 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <InstrumentSearch />
+        <InstrumentSearch onSelect={addInstrument} />
 
         <div className="flex items-center justify-end gap-1.5 lg:col-start-3">
           <Button

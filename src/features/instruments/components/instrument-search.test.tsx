@@ -26,6 +26,7 @@ describe("InstrumentSearch", () => {
   beforeEach(() => mockedSearchInstruments.mockReset());
 
   it("searches after the debounce and supports keyboard selection", async () => {
+    const handleSelect = vi.fn();
     mockedSearchInstruments.mockResolvedValue([
       {
         id: 1,
@@ -40,7 +41,9 @@ describe("InstrumentSearch", () => {
       },
     ]);
     const user = userEvent.setup();
-    render(<InstrumentSearch />, { wrapper: TestProviders });
+    render(<InstrumentSearch onSelect={handleSelect} />, {
+      wrapper: TestProviders,
+    });
     const input = screen.getByRole("combobox", {
       name: "Search financial instruments",
     });
@@ -56,7 +59,10 @@ describe("InstrumentSearch", () => {
 
     await user.keyboard("{ArrowDown}{Enter}");
 
-    expect(input).toHaveValue("AAPL");
+    expect(input).toHaveValue("");
+    expect(handleSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ symbol: "AAPL" }),
+    );
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 });

@@ -60,6 +60,7 @@ try {
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   const html = await response.text();
   assert.match(html, /<h1\b[^>]*>MarketLens<\/h1>/);
+  assert.match(html, /<h2\b[^>]*>My Watchlist<\/h2>/);
   assert.doesNotMatch(html, /ssr-outlet|@react-refresh|\/src\/entry-client/);
 
   const fontPreload = html.match(
