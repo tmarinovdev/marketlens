@@ -18,7 +18,7 @@ test("renders the dashboard on the server and hydrates navigation", async ({
   const initialDocumentTime = await page.evaluate(() => performance.timeOrigin);
 
   await expect(
-    page.getByRole("searchbox", { name: "Search financial instruments" }),
+    page.getByRole("combobox", { name: "Search financial instruments" }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Toggle color theme" }).click();

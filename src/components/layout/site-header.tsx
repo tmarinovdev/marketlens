@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Info, LogIn, Menu, Moon, Search, Sun, UserPlus } from "lucide-react";
+import { Info, LogIn, Menu, Moon, Sun, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InstrumentSearch } from "@/features/instruments/components/instrument-search";
 
 const themeStorageKey = "marketlens-theme";
 
@@ -50,23 +51,7 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <div
-          role="search"
-          className="col-span-2 row-start-2 flex h-11 items-center gap-3 rounded-xl border border-input bg-background/80 px-3 shadow-xs transition-[border-color,box-shadow] focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/15 lg:col-span-1 lg:col-start-2 lg:row-start-1"
-        >
-          <Search aria-hidden="true" className="size-5 shrink-0 text-primary" />
-          <label htmlFor="instrument-search" className="sr-only">
-            Search financial instruments
-          </label>
-          <input
-            id="instrument-search"
-            type="search"
-            name="instrument-search"
-            autoComplete="off"
-            placeholder="Search stocks, indexes, ETFs, commodities…"
-            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </div>
+        <InstrumentSearch />
 
         <div className="flex items-center justify-end gap-1.5 lg:col-start-3">
           <Button
