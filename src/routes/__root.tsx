@@ -6,6 +6,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 
 interface RouterContext {
@@ -86,6 +87,7 @@ function RootDocument() {
       <body>
         <SiteHeader />
         <Outlet />
+        <SiteFooter />
         <Scripts />
       </body>
     </html>

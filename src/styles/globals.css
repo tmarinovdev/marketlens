@@ -20,7 +20,7 @@
   }
 
   body {
-    @apply min-h-svh bg-background font-sans text-foreground antialiased;
+    @apply flex min-h-svh flex-col bg-background font-sans text-foreground antialiased;
   }
 }
 

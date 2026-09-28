@@ -10,6 +10,12 @@ test("renders the dashboard on the server and hydrates navigation", async ({
   await expect(
     page.getByRole("heading", { level: 2, name: "My Watchlist" }),
   ).toBeVisible();
+  await expect(
+    page.getByText(`© ${new Date().getUTCFullYear()} MarketLens`),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/MarketLens is for informational purposes only/),
+  ).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   expect(
     await page.evaluate(() => document.fonts.check('16px "Inter Variable"')),
