@@ -157,6 +157,11 @@ Each article contains:
 - headline
 - short summary
 
+For v1, the dashboard requests news for all selected instruments in one batch
+and displays the latest 12 unique relevant articles as a single newest-first
+feed. The dashboard does not paginate or virtualize this bounded list. A future
+instrument detail page or dedicated news page may provide a larger feed.
+
 The approved design currently does not require:
 
 - bookmark buttons

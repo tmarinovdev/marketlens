@@ -7,6 +7,10 @@ const DashboardCharts = lazy(async () => ({
     .DashboardCharts,
 }));
 
+const MarketNews = lazy(async () => ({
+  default: (await import("@/features/news/components/market-news")).MarketNews,
+}));
+
 export function App() {
   const instrumentCount = useWatchlistStore(
     (state) => state.instruments.length,
@@ -19,14 +23,35 @@ export function App() {
       <div className="mx-auto max-w-7xl">
         <WatchlistSection />
         {hasHydrated && instrumentCount > 0 ? (
-          <Suspense
-            fallback={<DashboardChartsFallback count={instrumentCount} />}
-          >
-            <DashboardCharts />
-          </Suspense>
+          <>
+            <Suspense
+              fallback={<DashboardChartsFallback count={instrumentCount} />}
+            >
+              <DashboardCharts />
+            </Suspense>
+            <Suspense fallback={<MarketNewsFallback />}>
+              <MarketNews />
+            </Suspense>
+          </>
         ) : null}
       </div>
     </main>
+  );
+}
+
+function MarketNewsFallback() {
+  return (
+    <div aria-label="Loading market news" className="mt-8" aria-busy="true">
+      <div className="h-6 w-32 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div
+            key={index}
+            className="h-40 animate-pulse rounded-2xl border border-border bg-card shadow-sm motion-reduce:animate-none"
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 

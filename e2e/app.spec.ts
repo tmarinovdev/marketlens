@@ -51,6 +51,7 @@ test("reorders and persists an anonymous watchlist with the keyboard", async ({
 }) => {
   const chartSizeWarnings: string[] = [];
   let historyRequestCount = 0;
+  let newsRequestCount = 0;
   let activeHistoryRequests = 0;
   let historyBundleLoaded = false;
   const pricesByRange: Record<string, readonly number[]> = {
@@ -133,6 +134,31 @@ test("reorders and persists an anonymous watchlist with the keyboard", async ({
     activeHistoryRequests -= 1;
     historyBundleLoaded = true;
   });
+  await page.route(/\/api\/market\/news\?/, async (route) => {
+    newsRequestCount += 1;
+    const symbols =
+      new URL(route.request().url()).searchParams.get("symbols")?.split(",") ??
+      [];
+
+    await route.fulfill({
+      json: {
+        articles: [
+          {
+            id: "news-1",
+            headline: "Apple and Microsoft lead the market",
+            summary: "Technology shares advanced in the latest session.",
+            source: "Example News",
+            author: "Reporter",
+            publishedAt: "2026-09-28T14:00:00Z",
+            url: "https://example.com/market-news",
+            imageUrl: null,
+            symbols,
+          },
+        ],
+        fetchedAt: "2026-09-28T14:00:00Z",
+      },
+    });
+  });
   await page.addInitScript(() => {
     if (localStorage.getItem("marketlens-watchlist")) return;
 
@@ -175,6 +201,9 @@ test("reorders and persists an anonymous watchlist with the keyboard", async ({
   const charts = page.getByRole("region", { name: "Market charts" });
   await expect(charts.getByRole("article")).toHaveCount(2);
   await expect(charts.getByRole("article").first()).toContainText("AAPL");
+  const marketNews = page.getByRole("region", { name: "Market News" });
+  await expect(marketNews).toContainText("Apple and Microsoft lead the market");
+  expect(newsRequestCount).toBe(1);
   const appleChart = charts
     .getByRole("article")
     .filter({ has: page.getByRole("heading", { name: "AAPL" }) });
@@ -223,9 +252,12 @@ test("reorders and persists an anonymous watchlist with the keyboard", async ({
 
   await expect(watchlist.getByRole("listitem").first()).toContainText("MSFT");
   await expect(charts.getByRole("article").first()).toContainText("MSFT");
+  expect(newsRequestCount).toBe(1);
   await page.reload();
   await expect(watchlist.getByRole("listitem").first()).toContainText("MSFT");
   await expect(charts.getByRole("article").first()).toContainText("MSFT");
+  await expect(marketNews).toContainText("Apple and Microsoft lead the market");
+  expect(newsRequestCount).toBe(2);
   expect(chartSizeWarnings).toEqual([]);
 });
 

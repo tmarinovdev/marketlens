@@ -735,6 +735,14 @@ background bundle containing every longer range for all watched symbols. Range
 controls read from TanStack Query's cache and do not initiate requests.
 Time-series data is not persisted to Supabase.
 
+Market News uses one batched Alpaca request for the complete watchlist. The
+server validates and normalizes the provider response, removes duplicate or
+unrelated stories, and returns the latest 12 articles in one newest-first feed.
+TanStack Query caches that result for five minutes. News images load
+lazily, and the dashboard has explicit loading, empty, and error states. The v1
+dashboard intentionally has no pagination or load-more control; expanded news
+belongs on a future instrument or dedicated news page.
+
 ```text
 Browser
    ↓

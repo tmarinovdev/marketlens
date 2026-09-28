@@ -7,6 +7,7 @@ import type {
   PricePoint,
 } from "@/features/market-data/types/market-data";
 import type { MarketProvider, MarketProviderRequestOptions } from "../types.ts";
+import { fetchAlpacaNews } from "./news.ts";
 
 const ALPACA_DATA_URL = "https://data.alpaca.markets/v2/stocks";
 const ALPACA_CLOCK_URL = "https://paper-api.alpaca.markets/v2/clock";
@@ -335,4 +336,5 @@ export const alpacaMarketProvider: MarketProvider = {
   snapshots: fetchAlpacaSnapshots,
   history: fetchAlpacaHistory,
   historyBundle: fetchAlpacaHistoryBundle,
+  news: fetchAlpacaNews,
 };

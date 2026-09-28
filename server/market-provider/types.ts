@@ -3,6 +3,7 @@ import type {
   MarketHistory,
   MarketSnapshotsResponse,
 } from "@/features/market-data/types/market-data";
+import type { MarketNewsItem } from "@/features/news/types/market-news";
 
 export interface MarketProviderRequestOptions {
   readonly apiKey: string;
@@ -24,4 +25,8 @@ export interface MarketProvider {
     symbols: readonly string[],
     options: MarketProviderRequestOptions,
   ): Promise<readonly MarketHistory[]>;
+  news(
+    symbols: readonly string[],
+    options: MarketProviderRequestOptions,
+  ): Promise<readonly MarketNewsItem[]>;
 }

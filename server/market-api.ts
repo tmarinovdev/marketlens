@@ -69,6 +69,14 @@ export async function handleMarketApiRequest(
       return jsonResponse({ histories, fetchedAt: new Date().toISOString() });
     }
 
+    if (url.pathname === "/api/market/news") {
+      const articles = await alpacaMarketProvider.news(
+        symbols,
+        providerOptions,
+      );
+      return jsonResponse({ articles, fetchedAt: new Date().toISOString() });
+    }
+
     return jsonResponse(
       { error: "Market endpoint not found." },
       { status: 404 },
