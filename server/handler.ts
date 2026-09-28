@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { render } from "@/entry-server";
+import { handleMarketApiRequest } from "./market-api.ts";
 import { sendWebResponse, toWebRequest } from "./node-http.ts";
 
 export default async function handler(
@@ -7,6 +8,16 @@ export default async function handler(
   response: ServerResponse,
 ) {
   try {
+    const webRequest = toWebRequest(request);
+    const apiResponse = await handleMarketApiRequest(webRequest);
+
+    if (apiResponse) {
+      await sendWebResponse(apiResponse, response, {
+        head: request.method === "HEAD",
+      });
+      return;
+    }
+
     if (request.method !== "GET" && request.method !== "HEAD") {
       response.writeHead(405, {
         Allow: "GET, HEAD",
@@ -16,7 +27,7 @@ export default async function handler(
       return;
     }
 
-    const result = await render({ request: toWebRequest(request) });
+    const result = await render({ request: webRequest });
     await sendWebResponse(result, response, {
       head: request.method === "HEAD",
       cacheControl: "private, no-store",

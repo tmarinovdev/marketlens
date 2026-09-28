@@ -4,6 +4,7 @@ import { loadEnvFile } from "node:process";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { createServer as createViteServer } from "vite";
+import { handleMarketApiRequest } from "./market-api.ts";
 import { sendWebResponse, toWebRequest } from "./node-http.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -46,6 +47,16 @@ server.on("request", (request, response) => {
       return;
     }
     void (async () => {
+      const webRequest = toWebRequest(request);
+      const apiResponse = await handleMarketApiRequest(webRequest);
+
+      if (apiResponse) {
+        await sendWebResponse(apiResponse, response, {
+          head: request.method === "HEAD",
+        });
+        return;
+      }
+
       if (request.method !== "GET" && request.method !== "HEAD") {
         response.writeHead(405, { Allow: "GET, HEAD" });
         response.end();
@@ -63,7 +74,7 @@ server.on("request", (request, response) => {
       }
 
       const result: unknown = await module.render({
-        request: toWebRequest(request),
+        request: webRequest,
       });
       if (!(result instanceof Response)) {
         throw new Error("The SSR render function must return a Response.");

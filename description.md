@@ -423,12 +423,17 @@ Use Alpaca historical bars for v1.
 Suggested compact dashboard ranges:
 
 ```text
-1D → ~10-minute bars
+1D → 15-minute bars
 1W → ~1-hour bars
 1M → daily bars
 3M → daily bars
 1Y → daily bars
 ```
+
+Load the `1D` range first for all watched instruments. Then preload the longer
+ranges as one background browser request. Derive `1M`, `3M`, `1Y`, and `YTD`
+from one daily-bar dataset so changing a range reads cached data rather than
+initiating a request.
 
 ### Index and commodity proxies
 

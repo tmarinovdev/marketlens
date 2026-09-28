@@ -49,6 +49,90 @@ test("server-renders route data on a direct About request", async ({
 test("reorders and persists an anonymous watchlist with the keyboard", async ({
   page,
 }) => {
+  const chartSizeWarnings: string[] = [];
+  let historyRequestCount = 0;
+  let activeHistoryRequests = 0;
+  let historyBundleLoaded = false;
+  const pricesByRange: Record<string, readonly number[]> = {
+    "1D": [100, 104, 102],
+    "1W": [100, 98, 105],
+    "1M": [100, 106, 101],
+    "3M": [100, 95, 108],
+    "1Y": [100, 110, 103],
+    YTD: [100, 97, 112],
+  };
+  page.on("console", (message) => {
+    if (message.text().includes("width(0) and height(0) of chart")) {
+      chartSizeWarnings.push(message.text());
+    }
+  });
+
+  await page.route("**/api/market/snapshots?*", async (route) => {
+    const symbols =
+      new URL(route.request().url()).searchParams.get("symbols")?.split(",") ??
+      [];
+    await route.fulfill({
+      json: {
+        snapshots: symbols.map((symbol, index) => ({
+          symbol,
+          price: 100 + index,
+          changePercent: index === 0 ? 1.25 : -0.75,
+          asOf: "2026-09-28T14:00:00Z",
+        })),
+        marketOpen: false,
+        nextOpen: "2026-09-29T09:30:00-04:00",
+        fetchedAt: "2026-09-28T14:00:00Z",
+      },
+    });
+  });
+  await page.route(/\/api\/market\/history\?/, async (route) => {
+    historyRequestCount += 1;
+    activeHistoryRequests += 1;
+    const requestUrl = new URL(route.request().url());
+    const symbols = requestUrl.searchParams.get("symbols")?.split(",") ?? [];
+    const prices = pricesByRange["1D"];
+    await route.fulfill({
+      json: {
+        histories: symbols.map((symbol) => ({
+          symbol,
+          range: "1D",
+          sessionDate: "2026-09-28",
+          points: prices?.map((price, index) => ({
+            timestamp: `2026-09-28T${13 + index}:30:00Z`,
+            price,
+          })),
+        })),
+        fetchedAt: "2026-09-28T14:00:00Z",
+      },
+    });
+    activeHistoryRequests -= 1;
+  });
+  await page.route(/\/api\/market\/history-bundle\?/, async (route) => {
+    historyRequestCount += 1;
+    activeHistoryRequests += 1;
+    const requestUrl = new URL(route.request().url());
+    const symbols = requestUrl.searchParams.get("symbols")?.split(",") ?? [];
+    const ranges = ["1W", "1M", "3M", "1Y", "YTD"] as const;
+
+    await route.fulfill({
+      json: {
+        histories: symbols.flatMap((symbol) =>
+          ranges.map((range) => ({
+            symbol,
+            range,
+            sessionDate: null,
+            points: pricesByRange[range]?.map((price, index) => ({
+              timestamp: `2026-09-${26 + index}T14:00:00Z`,
+              price,
+            })),
+          })),
+        ),
+        fetchedAt: "2026-09-28T14:00:00Z",
+      },
+    });
+    activeHistoryRequests -= 1;
+    historyBundleLoaded = true;
+  });
   await page.addInitScript(() => {
     if (localStorage.getItem("marketlens-watchlist")) return;
 
@@ -88,6 +172,38 @@ test("reorders and persists an anonymous watchlist with the keyboard", async ({
   await page.goto("/");
 
   const watchlist = page.getByRole("list", { name: "Watchlist instruments" });
+  const charts = page.getByRole("region", { name: "Market charts" });
+  await expect(charts.getByRole("article")).toHaveCount(2);
+  await expect(charts.getByRole("article").first()).toContainText("AAPL");
+  const appleChart = charts
+    .getByRole("article")
+    .filter({ has: page.getByRole("heading", { name: "AAPL" }) });
+  const microsoftChart = charts
+    .getByRole("article")
+    .filter({ has: page.getByRole("heading", { name: "MSFT" }) });
+  const applePath = appleChart.locator(".recharts-area-curve");
+  const microsoftPath = microsoftChart.locator(".recharts-area-curve");
+  const initialApplePath = await applePath.getAttribute("d");
+  const initialMicrosoftPath = await microsoftPath.getAttribute("d");
+  await expect.poll(() => historyBundleLoaded).toBe(true);
+  await expect.poll(() => activeHistoryRequests).toBe(0);
+  expect(historyRequestCount).toBe(2);
+  const requestsBeforeRangeChange = historyRequestCount;
+
+  await appleChart.getByRole("button", { name: "3M" }).click();
+  await expect(appleChart.getByRole("button", { name: "3M" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect
+    .poll(() => applePath.getAttribute("d"))
+    .not.toBe(initialApplePath);
+  await expect(
+    microsoftChart.getByRole("button", { name: "1D" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(await microsoftPath.getAttribute("d")).toBe(initialMicrosoftPath);
+  expect(historyRequestCount).toBe(requestsBeforeRangeChange);
+
   const appleHandle = page.getByRole("button", { name: "Reorder AAPL" });
   const appleItem = appleHandle.locator("..");
   await appleHandle.focus();
@@ -106,8 +222,11 @@ test("reorders and persists an anonymous watchlist with the keyboard", async ({
   await expect(appleItem).toHaveAttribute("data-dragging", "false");
 
   await expect(watchlist.getByRole("listitem").first()).toContainText("MSFT");
+  await expect(charts.getByRole("article").first()).toContainText("MSFT");
   await page.reload();
   await expect(watchlist.getByRole("listitem").first()).toContainText("MSFT");
+  await expect(charts.getByRole("article").first()).toContainText("MSFT");
+  expect(chartSizeWarnings).toEqual([]);
 });
 
 test("returns a router-owned 404 page for an unknown route", async ({

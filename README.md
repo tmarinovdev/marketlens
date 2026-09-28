@@ -4,6 +4,8 @@
 
 It provides a clean way to search and monitor stocks, indices, commodities, and other supported financial instruments without the density of a traditional trading terminal.
 
+**Live application:** [marketlens-ashy.vercel.app](https://marketlens-ashy.vercel.app/)
+
 The project focuses on:
 
 - fast rendering
@@ -718,12 +720,20 @@ The dashboard uses:
 
 - IEX-backed current US equity/ETF data
 - batched REST snapshot polling
-- approximately 30-second refreshes while appropriate
+- 30-second snapshot refreshes while the dashboard tab is active
 - Alpaca historical bars
 - Alpaca market news
 - a locally synchronized instrument catalog
 
 The browser does not communicate directly with Alpaca using private credentials.
+
+Dashboard cards request batched snapshots first, then load historical charts
+asynchronously. The default `1D` chart uses 15-minute bars and refreshes every
+15 minutes while the market is open. When the market is closed, it displays the
+latest regular trading session. After `1D` is ready, the browser preloads one
+background bundle containing every longer range for all watched symbols. Range
+controls read from TanStack Query's cache and do not initiate requests.
+Time-series data is not persisted to Supabase.
 
 ```text
 Browser

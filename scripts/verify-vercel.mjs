@@ -63,6 +63,11 @@ try {
   assert.match(html, /<h2\b[^>]*>My Watchlist<\/h2>/);
   assert.doesNotMatch(html, /ssr-outlet|@react-refresh|\/src\/entry-client/);
 
+  const invalidMarketRequest = await fetch(
+    `${url}/api/market/snapshots?symbols=not%20valid`,
+  );
+  assert.equal(invalidMarketRequest.status, 400);
+
   const fontPreload = html.match(
     /<link\b(?=[^>]*\brel="preload")(?=[^>]*\bas="font")(?=[^>]*\btype="font\/woff2")(?=[^>]*\bcrossorigin="anonymous")(?=[^>]*\bhref="(\/assets\/inter-latin-wght-normal\.woff2)")[^>]*>/,
   );
