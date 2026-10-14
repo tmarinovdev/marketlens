@@ -1,5 +1,93 @@
 import { expect, test } from "@playwright/test";
 
+test("registers with email verification and rejects mismatched passwords", async ({
+  page,
+}) => {
+  let signups = 0;
+  await page.route("**/auth/v1/signup*", async (route) => {
+    signups += 1;
+    const payload: unknown = route.request().postDataJSON();
+    expect(payload).toMatchObject({
+      email: "person@example.com",
+      password: "Test-password1!",
+    });
+    expect(payload).not.toHaveProperty("confirmPassword");
+    await route.fulfill({
+      json: {
+        user: {
+          id: "test-user",
+          email: "person@example.com",
+          aud: "authenticated",
+          created_at: "2026-10-14T10:00:00Z",
+        },
+        session: null,
+      },
+    });
+  });
+  await page.goto("/register");
+  await page.getByLabel("Email", { exact: true }).fill("person@example.com");
+  await page.getByLabel("Password", { exact: true }).fill("Test-password1!");
+  await page
+    .getByLabel("Confirm password", { exact: true })
+    .fill("different-password");
+  await page
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText("Passwords must match");
+  expect(signups).toBe(0);
+  await page
+    .getByLabel("Confirm password", { exact: true })
+    .fill("Test-password1!");
+  await page
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Check your email" }),
+  ).toBeVisible();
+  expect(signups).toBe(1);
+  const verifierCookies = (await page.context().cookies()).filter((cookie) =>
+    cookie.name.includes("auth-token-code-verifier"),
+  );
+  expect(verifierCookies.length).toBeGreaterThan(0);
+  expect(verifierCookies.every((cookie) => cookie.expires === -1)).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Wait 60 seconds before resending" }),
+  ).toBeDisabled();
+});
+
+test("does not offer a verification link after an incorrect login password", async ({
+  page,
+}) => {
+  await page.route("**/auth/v1/token*", async (route) => {
+    await route.fulfill({
+      status: 400,
+      headers: {
+        "X-Supabase-Api-Version": "2024-01-01",
+        "Access-Control-Expose-Headers": "X-Supabase-Api-Version",
+      },
+      json: { code: "invalid_credentials", msg: "Invalid login credentials" },
+    });
+  });
+  await page.goto("/login");
+  await page.getByLabel("Email", { exact: true }).fill("person@example.com");
+  await page.getByLabel("Password", { exact: true }).fill("incorrect-password");
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "email or password is incorrect",
+  );
+  await expect(
+    page.getByRole("button", { name: "Resend verification link" }),
+  ).toHaveCount(0);
+});
+
+test("handles a verification callback without a code", async ({ page }) => {
+  await page.goto("/auth/callback");
+  await expect(page).toHaveURL(/\/login\?verification=failed$/);
+  await expect(page.getByRole("alert")).toContainText(
+    "verification link could not be completed",
+  );
+});
+
 test("renders the dashboard on the server and hydrates navigation", async ({
   page,
 }) => {

@@ -174,6 +174,11 @@ Users register with only:
 - email
 - password
 
+The form also asks users to confirm their password before submission. A
+verification link confirms the email before password login. Login/logout state
+is reflected in the site menu. Supabase owns the cookie session, while Zustand
+holds the current user for UI updates without persisting a second session.
+
 Authentication is provided by Supabase.
 
 ## Post-login experience

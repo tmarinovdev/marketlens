@@ -8,9 +8,12 @@ import {
 } from "@tanstack/react-router";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { AuthProvider } from "@/features/auth/auth-provider";
+import type { AuthUser } from "@/features/auth/types";
 
 interface RouterContext {
   queryClient: QueryClient;
+  initialAuthUser: AuthUser | null;
 }
 
 const stylesheetHref = import.meta.env.PROD
@@ -22,6 +25,7 @@ const interFontHref = import.meta.env.PROD
 const themeScript = `try{if(localStorage.getItem("marketlens-theme")==="dark"){document.documentElement.classList.add("dark")}}catch{}`;
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  loader: ({ context }) => ({ authUser: context.initialAuthUser }),
   head: () => ({
     links: [
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
@@ -69,6 +73,7 @@ window.__vite_plugin_react_preamble_installed__ = true`,
 });
 
 function RootDocument() {
+  const { authUser } = Route.useLoaderData();
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -85,9 +90,11 @@ function RootDocument() {
         <HeadContent />
       </head>
       <body>
-        <SiteHeader />
-        <Outlet />
-        <SiteFooter />
+        <AuthProvider initialUser={authUser}>
+          <SiteHeader />
+          <Outlet />
+          <SiteFooter />
+        </AuthProvider>
         <Scripts />
       </body>
     </html>

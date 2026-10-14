@@ -17,6 +17,49 @@ The project focuses on:
 
 ## Project status
 
+### Accounts and email verification
+
+Registration uses email, password, and confirmation of the password. Supabase
+Auth sends a verification link before allowing password login. Confirm password
+is validated locally and is never sent to Supabase. Passwords are not stored in
+application state persistence or logs.
+
+New passwords require at least eight characters, one uppercase ASCII letter,
+one digit, and one special character. Configure the matching password strength
+policy in Supabase Auth as well: browser validation alone cannot enforce a
+provider-side policy. Existing accounts can still log in with their old password.
+
+The browser uses `@supabase/ssr` cookie storage. Each authenticated SSR request
+creates a fresh server client and validates the user with `getUser()`, forwards
+refreshed cookies, and disables response caching. Only the user ID and email are
+included in rendered route data. A per-provider Zustand store mirrors Supabase
+auth events for UI state; it does not persist tokens or authorize server requests.
+Login and logout reload the dashboard to obtain freshly validated SSR data.
+
+Active auth and PKCE cookies are session cookies, including cookies issued by
+SSR refreshes. Existing persistent browser cookies are converted on client
+initialization. Logout preserves explicit cookie deletion. Browser session
+restoration can retain session cookies even after the browser closes; this
+policy cannot guarantee server-side logout on browser termination.
+
+Configure Supabase Authentication with email confirmation enabled, Site URL
+`https://marketlens-ashy.vercel.app`, and these allowed redirect URLs:
+
+- `http://127.0.0.1:5173/auth/callback`
+- `https://marketlens-ashy.vercel.app/auth/callback`
+
+The default confirmation template works with the PKCE callback. Open the link
+in the browser and origin that initiated registration; the exchange needs its
+verifier cookie. A missing, expired, or unsuccessful code redirects to login
+with a verification message and resend action. Preview origins must be added
+explicitly before testing verification on a preview deployment.
+
+Supabase's built-in email sender is restricted to project-team addresses and
+currently two messages per hour. Configure custom SMTP before inviting ordinary
+app users. The resend button has a 60-second cooldown; Supabase's own rate limits
+still apply. No SMTP credentials are required in Vercel or GitHub.
+Password recovery and authenticated watchlist persistence are follow-up features.
+
 Market Lens is in active development.
 
 The initial implementation focuses on:

@@ -3,16 +3,17 @@ import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query
 import { StrictMode, type ReactNode } from "react";
 import { createQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
+import type { AuthUser } from "@/features/auth/types";
 
 function StrictModeWrapper({ children }: { children: ReactNode }) {
   return <StrictMode>{children}</StrictMode>;
 }
 
-export function createRouter() {
+export function createRouter(initialAuthUser: AuthUser | null = null) {
   const queryClient = createQueryClient();
   const router = createTanStackRouter({
     routeTree,
-    context: { queryClient },
+    context: { queryClient, initialAuthUser },
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
     scrollRestoration: true,

@@ -22,6 +22,10 @@ export default defineConfig({
     },
   ],
   webServer: {
+    env: {
+      VITE_SUPABASE_URL: "https://auth.example.test",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_browser_test",
+    },
     command: "node server/dev.ts",
     url: baseURL,
     reuseExistingServer: !process.env.CI,

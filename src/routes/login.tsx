@@ -1,16 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AuthForm } from "@/features/auth/components/auth-form";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { verification?: "failed" } =>
+    search.verification === "failed" ? { verification: "failed" } : {},
   component: LoginPage,
 });
 
 function LoginPage() {
+  const { verification } = Route.useSearch();
   return (
-    <main className="mx-auto max-w-5xl space-y-2 px-6 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight">Log in</h1>
-      <p className="text-muted-foreground">
-        Account access will be available soon.
-      </p>
-    </main>
+    <AuthForm mode="login" verificationFailed={verification === "failed"} />
   );
 }

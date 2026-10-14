@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Info, LogIn, Menu, Moon, Sun, UserPlus } from "lucide-react";
+import { Info, LogIn, LogOut, Menu, Moon, Sun, UserPlus } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { useAuthUser } from "@/features/auth/auth-provider";
 import { Button } from "@/components/ui/button";
 import { InstrumentSearch } from "@/features/instruments/components/instrument-search";
 import { useWatchlistStore } from "@/features/watchlist/store/watchlist-store";
@@ -30,6 +32,11 @@ function toggleTheme() {
 
 export function SiteHeader() {
   const addInstrument = useWatchlistStore((state) => state.addInstrument);
+  const user = useAuthUser();
+  const logout = useMutation({
+    mutationFn: async () => (await import("@/features/auth/api")).logOut(),
+    onSuccess: () => window.location.assign("/"),
+  });
 
   return (
     <header className="relative z-50 px-3 pt-3 sm:px-5 sm:pt-5">
@@ -97,20 +104,47 @@ export function SiteHeader() {
               About
             </Link>
             <div role="separator" className="my-1 h-px bg-border" />
-            <Link
-              to="/login"
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
-            >
-              <LogIn aria-hidden="true" className="size-4" />
-              Log in
-            </Link>
-            <Link
-              to="/register"
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
-            >
-              <UserPlus aria-hidden="true" className="size-4" />
-              Create account
-            </Link>
+            {user ? (
+              <>
+                <p className="truncate px-3 py-2 text-xs text-muted-foreground">
+                  {user.email ?? "Signed in"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => logout.mutate()}
+                  disabled={logout.isPending}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none hover:bg-accent focus-visible:bg-accent disabled:opacity-50"
+                >
+                  <LogOut aria-hidden="true" className="size-4" />
+                  {logout.isPending ? "Logging out…" : "Log out"}
+                </button>
+                {logout.error ? (
+                  <p
+                    role="alert"
+                    className="px-3 py-2 text-xs text-destructive"
+                  >
+                    {logout.error.message}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
+                >
+                  <LogIn aria-hidden="true" className="size-4" />
+                  Log in
+                </Link>
+                <Link
+                  to="/register"
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
+                >
+                  <UserPlus aria-hidden="true" className="size-4" />
+                  Create account
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
