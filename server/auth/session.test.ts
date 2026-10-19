@@ -89,7 +89,7 @@ describe("SSR auth", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("Location")).toBe("/");
   });
-  it("redirects missing or rejected codes to the verification error state", async () => {
+  it("distinguishes a missing verification code from an unsuccessful session exchange", async () => {
     const missing = await handleAuthCallback(
       new Request("https://marketlens.test/auth/callback"),
     );
@@ -101,6 +101,8 @@ describe("SSR auth", () => {
     const expired = await handleAuthCallback(
       new Request("https://marketlens.test/auth/callback?code=expired"),
     );
-    expect(expired.headers.get("Location")).toBe("/login?verification=failed");
+    expect(expired.headers.get("Location")).toBe(
+      "/login?verification=signin_failed",
+    );
   });
 });

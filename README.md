@@ -48,10 +48,12 @@ Configure Supabase Authentication with email confirmation enabled, Site URL
 - `http://127.0.0.1:5173/auth/callback`
 - `https://marketlens-ashy.vercel.app/auth/callback`
 
-The default confirmation template works with the PKCE callback. Open the link
-in the browser and origin that initiated registration; the exchange needs its
-verifier cookie. A missing, expired, or unsuccessful code redirects to login
-with a verification message and resend action. Preview origins must be added
+The default confirmation template works with the PKCE callback. Automatic
+sign-in needs the verifier cookie from the browser and origin that initiated
+registration. Supabase can confirm the email before the app exchanges the code:
+an unsuccessful exchange redirects to login with a neutral message and no
+resend prompt. A missing code redirects to a verification error with a resend
+action. Preview origins must be added
 explicitly before testing verification on a preview deployment.
 
 Supabase's built-in email sender is restricted to project-team addresses and

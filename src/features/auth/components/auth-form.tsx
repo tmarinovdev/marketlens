@@ -19,9 +19,11 @@ const subscribeToHydration = () => () => {};
 export function AuthForm({
   mode,
   verificationFailed = false,
+  automaticSignInFailed = false,
 }: {
   mode: "register" | "login";
   verificationFailed?: boolean;
+  automaticSignInFailed?: boolean;
 }) {
   const isRegistration = mode === "register";
   const hydrated = useSyncExternalStore(
@@ -95,6 +97,12 @@ export function AuthForm({
               ? "Create an account"
               : "Log in"}
         </h1>
+        {automaticSignInFailed ? (
+          <p role="status" className="mt-3 text-sm text-muted-foreground">
+            We couldn’t sign you in automatically. Your email may already be
+            confirmed. Log in below with your email and password.
+          </p>
+        ) : null}
         {verificationFailed ? (
           <p role="alert" className="mt-3 text-sm text-destructive">
             This verification link could not be completed. It may have expired
@@ -109,7 +117,9 @@ export function AuthForm({
             className="mt-3 text-sm leading-relaxed text-muted-foreground"
           >
             If registration can proceed, a verification link will be sent to{" "}
-            {confirmationEmail}. Open it in this browser to confirm your email.
+            {confirmationEmail}. Follow the link to verify your email. Open it
+            in this browser to sign in automatically. If you don’t see it in
+            your inbox, check your spam or junk folder.
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -173,7 +183,7 @@ export function AuthForm({
             <Button
               type="button"
               variant="outline"
-              className="h-10"
+              className="h-10 cursor-pointer"
               disabled={resendCoolingDown || resend.isPending || !email.trim()}
               onClick={() => resend.mutate()}
             >
@@ -186,7 +196,8 @@ export function AuthForm({
             {resend.isSuccess ? (
               <p role="status" className="mt-2 text-sm text-muted-foreground">
                 If the account needs confirmation, a new link has been
-                requested.
+                requested. If you don’t see it in your inbox, check your spam or
+                junk folder.
               </p>
             ) : null}
           </div>

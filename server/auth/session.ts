@@ -76,7 +76,7 @@ export async function handleAuthCallback(request: Request): Promise<Response> {
       new Response(null, {
         status: 303,
         headers: {
-          Location: error ? "/login?verification=failed" : "/",
+          Location: error ? "/login?verification=signin_failed" : "/",
           "Referrer-Policy": "no-referrer",
         },
       }),
@@ -85,7 +85,7 @@ export async function handleAuthCallback(request: Request): Promise<Response> {
     return auth.applyHeaders(
       new Response(null, {
         status: 303,
-        headers: { Location: "/login?verification=failed" },
+        headers: { Location: "/login?verification=signin_failed" },
       }),
     );
   }

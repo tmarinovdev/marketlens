@@ -40,6 +40,21 @@ async function fillRegistration(confirmPassword: string) {
 }
 
 describe("registration form", () => {
+  it("offers normal login without a resend prompt when automatic sign-in fails", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthForm mode="login" automaticSignInFailed />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Your email may already be confirmed",
+    );
+    expect(screen.getByRole("button", { name: "Log in" })).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Resend verification link" }),
+    ).not.toBeInTheDocument();
+  });
   it("does not offer verification resend for an incorrect login password", async () => {
     vi.mocked(logIn).mockRejectedValue(
       new Error("The email or password is incorrect."),
@@ -90,6 +105,9 @@ describe("registration form", () => {
       await screen.findByRole("heading", { name: "Check your email" }),
     ).toBeVisible();
     expect(screen.getByRole("status")).toHaveTextContent("person@example.com");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "check your spam or junk folder",
+    );
     expect(
       screen.queryByLabelText("Password", { exact: true }),
     ).not.toBeInTheDocument();
