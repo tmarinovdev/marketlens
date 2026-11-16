@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -10,7 +10,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5";
+    PostgrestVersion: "14.17";
+  };
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
   public: {
     Tables: {
@@ -65,11 +90,68 @@ export type Database = {
         };
         Relationships: [];
       };
+      watchlist_items: {
+        Row: {
+          instrument_id: number;
+          position: number;
+          user_id: string;
+        };
+        Insert: {
+          instrument_id: number;
+          position: number;
+          user_id: string;
+        };
+        Update: {
+          instrument_id?: number;
+          position?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "watchlist_items_instrument_id_fkey";
+            columns: ["instrument_id"];
+            isOneToOne: false;
+            referencedRelation: "instruments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "watchlist_items_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "watchlists";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
+      watchlists: {
+        Row: {
+          revision: number;
+          user_id: string;
+        };
+        Insert: {
+          revision?: number;
+          user_id: string;
+        };
+        Update: {
+          revision?: number;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      read_my_watchlist: { Args: never; Returns: Json };
+      save_my_watchlist: {
+        Args: {
+          expected_revision: number;
+          expected_user_id: string;
+          instrument_ids: number[];
+        };
+        Returns: Json;
+      };
       search_instruments: {
         Args: { result_limit?: number; search_query: string };
         Returns: {
@@ -212,6 +294,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

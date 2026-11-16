@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import {
   HeadContent,
   Link,
@@ -10,10 +11,14 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { AuthProvider } from "@/features/auth/auth-provider";
 import type { AuthUser } from "@/features/auth/types";
+import type { OwnedWatchlist } from "@/features/watchlist/api/owned-watchlist";
+import { ownedWatchlistQueryOptions } from "@/features/watchlist/queries/owned-watchlist";
+import { WatchlistProvider } from "@/features/watchlist/watchlist-provider";
 
 interface RouterContext {
   queryClient: QueryClient;
   initialAuthUser: AuthUser | null;
+  loadOwnedWatchlist?: () => Promise<OwnedWatchlist>;
 }
 
 const stylesheetHref = import.meta.env.PROD
@@ -25,7 +30,16 @@ const interFontHref = import.meta.env.PROD
 const themeScript = `try{if(localStorage.getItem("marketlens-theme")==="dark"){document.documentElement.classList.add("dark")}}catch{}`;
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  loader: ({ context }) => ({ authUser: context.initialAuthUser }),
+  loader: async ({ context }) => {
+    if (context.initialAuthUser && context.loadOwnedWatchlist) {
+      // A data error belongs to the watchlist UI, not the entire document.
+      await context.queryClient.prefetchQuery({
+        ...ownedWatchlistQueryOptions(context.initialAuthUser.id),
+        queryFn: context.loadOwnedWatchlist,
+      });
+    }
+    return { authUser: context.initialAuthUser };
+  },
   head: () => ({
     links: [
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
@@ -74,6 +88,17 @@ window.__vite_plugin_react_preamble_installed__ = true`,
 
 function RootDocument() {
   const { authUser } = Route.useLoaderData();
+  const { queryClient } = Route.useRouteContext();
+  const handleUserChange = useCallback(
+    async (previousUserId: string | null) => {
+      if (previousUserId) {
+        const queryKey = ["account-watchlist", previousUserId];
+        await queryClient.cancelQueries({ queryKey });
+        queryClient.removeQueries({ queryKey });
+      }
+    },
+    [queryClient],
+  );
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -90,10 +115,12 @@ function RootDocument() {
         <HeadContent />
       </head>
       <body>
-        <AuthProvider initialUser={authUser}>
-          <SiteHeader />
-          <Outlet />
-          <SiteFooter />
+        <AuthProvider initialUser={authUser} onUserChange={handleUserChange}>
+          <WatchlistProvider>
+            <SiteHeader />
+            <Outlet />
+            <SiteFooter />
+          </WatchlistProvider>
         </AuthProvider>
         <Scripts />
       </body>

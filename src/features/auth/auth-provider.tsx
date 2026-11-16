@@ -28,14 +28,17 @@ const AuthContext = createContext<ReturnType<typeof createAuthStore> | null>(
 export function AuthProvider({
   initialUser,
   children,
+  onUserChange,
 }: {
   initialUser: AuthUser | null;
   children: ReactNode;
+  onUserChange?: (previousUserId: string | null) => Promise<void>;
 }) {
   const [store] = useState(() => createAuthStore(initialUser));
   useEffect(() => {
     let active = true;
     let unsubscribe: (() => void) | undefined;
+    let changeTimer: ReturnType<typeof setTimeout> | undefined;
     void import("@/lib/supabase/client").then(
       ({ getSupabaseBrowserClient }) => {
         if (!active) return;
@@ -43,7 +46,17 @@ export function AuthProvider({
           data: { subscription },
         } = getSupabaseBrowserClient().auth.onAuthStateChange(
           (_event, session) => {
-            store.getState().setUser(toAuthUser(session?.user ?? null));
+            const user = toAuthUser(session?.user ?? null);
+            const previousUserId = store.getState().user?.id ?? null;
+            const changed = previousUserId !== (user?.id ?? null);
+            store.getState().setUser(user);
+            if (changed && onUserChange) {
+              clearTimeout(changeTimer);
+              // Run outside Supabase's auth lock, since loaders may verify auth.
+              changeTimer = setTimeout(() => {
+                void onUserChange(previousUserId);
+              }, 0);
+            }
           },
         );
         unsubscribe = () => subscription.unsubscribe();
@@ -51,9 +64,10 @@ export function AuthProvider({
     );
     return () => {
       active = false;
+      clearTimeout(changeTimer);
       unsubscribe?.();
     };
-  }, [store]);
+  }, [store, onUserChange]);
   return <AuthContext.Provider value={store}>{children}</AuthContext.Provider>;
 }
 

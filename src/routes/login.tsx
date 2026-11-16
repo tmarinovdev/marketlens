@@ -4,10 +4,12 @@ import { AuthForm } from "@/features/auth/components/auth-form";
 export const Route = createFileRoute("/login")({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { verification?: "failed" | "signin_failed" } =>
-    search.verification === "failed" || search.verification === "signin_failed"
+  ): { verification?: "failed" | "signin_failed" } => ({
+    ...(search.verification === "failed" ||
+    search.verification === "signin_failed"
       ? { verification: search.verification }
-      : {},
+      : {}),
+  }),
   component: LoginPage,
 });
 

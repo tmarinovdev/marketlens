@@ -12,9 +12,13 @@ const searchDelay = 250;
 
 interface InstrumentSearchProps {
   readonly onSelect?: (instrument: InstrumentSearchResult) => void;
+  readonly disabled?: boolean;
 }
 
-export function InstrumentSearch({ onSelect }: InstrumentSearchProps) {
+export function InstrumentSearch({
+  onSelect,
+  disabled = false,
+}: InstrumentSearchProps) {
   const listboxId = useId();
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -82,6 +86,7 @@ export function InstrumentSearch({ onSelect }: InstrumentSearchProps) {
         <input
           id="instrument-search"
           type="search"
+          disabled={disabled}
           name="instrument-search"
           role="combobox"
           aria-autocomplete="list"

@@ -16,10 +16,8 @@ import {
   marketIntradayHistoryQueryOptions,
   marketSnapshotsQueryOptions,
 } from "@/features/market-data/queries/market-data";
-import {
-  getWatchlistInstrumentId,
-  useWatchlistStore,
-} from "@/features/watchlist/store/watchlist-store";
+import { getWatchlistInstrumentId } from "@/features/watchlist/store/watchlist-store";
+import { useWatchlist } from "@/features/watchlist/watchlist-provider";
 import { InstrumentChartCard } from "./instrument-chart-card";
 
 interface ChartGridProps {
@@ -36,8 +34,7 @@ interface ChartGridProps {
 }
 
 export function DashboardCharts() {
-  const instruments = useWatchlistStore((state) => state.instruments);
-  const hasHydrated = useWatchlistStore((state) => state.hasHydrated);
+  const { instruments, hasHydrated } = useWatchlist();
 
   if (!hasHydrated || instruments.length === 0) return null;
 

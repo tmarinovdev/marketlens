@@ -99,6 +99,13 @@ The watchlist order controls chart widget order.
 
 Anonymous watchlist state should persist locally.
 
+Signed-in users have a separate saved watchlist, owned by their Supabase user
+and protected with Row Level Security. The public dashboard uses the saved list
+when signed in. At login, anonymous selections are copied automatically only if
+the account list is empty; populated account lists are never merged. Anonymous
+selections remain available after logout. Adding, removing, and reordering saves to the
+account, with a maximum of 20 instruments and conflict detection across devices.
+
 ## Dashboard charts
 
 The main content area displays one chart widget per watched instrument.

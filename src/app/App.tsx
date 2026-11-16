@@ -1,6 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useSyncExternalStore } from "react";
 import { WatchlistSection } from "@/features/watchlist/components/watchlist-section";
-import { useWatchlistStore } from "@/features/watchlist/store/watchlist-store";
+import { useWatchlist } from "@/features/watchlist/watchlist-provider";
+const subscribeToHydration = () => () => {};
 
 const DashboardCharts = lazy(async () => ({
   default: (await import("@/features/charts/components/dashboard-charts"))
@@ -12,17 +13,20 @@ const MarketNews = lazy(async () => ({
 }));
 
 export function App() {
-  const instrumentCount = useWatchlistStore(
-    (state) => state.instruments.length,
+  const { instruments, hasHydrated } = useWatchlist();
+  const instrumentCount = instruments.length;
+  const browserReady = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
   );
-  const hasHydrated = useWatchlistStore((state) => state.hasHydrated);
 
   return (
     <main className="px-3 pb-12 pt-4 sm:px-5 sm:pt-5">
       <h1 className="sr-only">MarketLens</h1>
       <div className="mx-auto max-w-7xl">
         <WatchlistSection />
-        {hasHydrated && instrumentCount > 0 ? (
+        {browserReady && hasHydrated && instrumentCount > 0 ? (
           <>
             <Suspense
               fallback={<DashboardChartsFallback count={instrumentCount} />}

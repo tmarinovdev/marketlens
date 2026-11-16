@@ -23,7 +23,16 @@ export async function render({
   const user = auth ? await auth.getUser() : null;
   const handler = createRequestHandler({
     request,
-    createRouter: () => createRouter(user),
+    createRouter: () =>
+      createRouter(
+        user,
+        auth && user
+          ? async () =>
+              (
+                await import("@/features/watchlist/api/owned-watchlist")
+              ).readOwnedWatchlist(auth.client)
+          : undefined,
+      ),
   });
   const response = await handler(defaultRenderHandler);
   return auth ? auth.applyHeaders(response) : response;

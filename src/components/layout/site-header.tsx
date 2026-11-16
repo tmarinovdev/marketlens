@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useAuthUser } from "@/features/auth/auth-provider";
 import { Button } from "@/components/ui/button";
 import { InstrumentSearch } from "@/features/instruments/components/instrument-search";
-import { useWatchlistStore } from "@/features/watchlist/store/watchlist-store";
+import { useWatchlist } from "@/features/watchlist/watchlist-provider";
 
 const themeStorageKey = "marketlens-theme";
 
@@ -31,7 +31,7 @@ function toggleTheme() {
 }
 
 export function SiteHeader() {
-  const addInstrument = useWatchlistStore((state) => state.addInstrument);
+  const { addInstrument, hasHydrated, isSaving, instruments } = useWatchlist();
   const user = useAuthUser();
   const logout = useMutation({
     mutationFn: async () => (await import("@/features/auth/api")).logOut(),
@@ -61,7 +61,10 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <InstrumentSearch onSelect={addInstrument} />
+        <InstrumentSearch
+          onSelect={addInstrument}
+          disabled={!hasHydrated || isSaving || instruments.length >= 20}
+        />
 
         <div className="flex items-center justify-end gap-1.5 lg:col-start-3">
           <Button

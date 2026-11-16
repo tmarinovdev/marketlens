@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  getInitializedWatchlistOwner,
+  markWatchlistInitialized,
+} from "@/features/watchlist/initialization";
 
 export const passwordSchema = z
   .string()
@@ -52,11 +56,20 @@ export async function logIn({
   email: string;
   password: string;
 }) {
-  const { error } = await getSupabaseBrowserClient().auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (error) throw new Error(authErrorMessage(error.code));
+  const previousOwner = getInitializedWatchlistOwner();
+  // Supabase emits SIGNED_IN before this promise resolves. Reset first so
+  // subscribers cannot mistake the new login for an already initialized one.
+  markWatchlistInitialized(null);
+  try {
+    const { error } = await getSupabaseBrowserClient().auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw new Error(authErrorMessage(error.code));
+  } catch (error) {
+    markWatchlistInitialized(previousOwner);
+    throw error;
+  }
 }
 
 export async function logOut() {
@@ -64,6 +77,7 @@ export async function logOut() {
     scope: "local",
   });
   if (error) throw new Error("Unable to log out. Please try again.");
+  markWatchlistInitialized(null);
 }
 
 function authErrorMessage(code: string | undefined) {

@@ -15,21 +15,22 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ListPlus, X } from "lucide-react";
-import { useEffect, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import type { InstrumentSearchResult } from "@/features/instruments/api/search-instruments";
-import {
-  getWatchlistInstrumentId,
-  useWatchlistStore,
-} from "../store/watchlist-store";
+import { getWatchlistInstrumentId } from "../store/watchlist-store";
+import { useWatchlist } from "../watchlist-provider";
 
 export function WatchlistSection() {
-  const instruments = useWatchlistStore((state) => state.instruments);
-  const hasHydrated = useWatchlistStore((state) => state.hasHydrated);
-  const removeInstrument = useWatchlistStore((state) => state.removeInstrument);
-  const reorderInstrument = useWatchlistStore(
-    (state) => state.reorderInstrument,
-  );
+  const {
+    instruments,
+    hasHydrated,
+    removeInstrument,
+    reorderInstrument,
+    isSaving,
+    error,
+    retry,
+  } = useWatchlist();
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
@@ -39,12 +40,6 @@ export function WatchlistSection() {
     }),
   );
   const instrumentIds = instruments.map(getWatchlistInstrumentId);
-
-  useEffect(() => {
-    void Promise.resolve(useWatchlistStore.persist.rehydrate()).finally(() => {
-      useWatchlistStore.setState({ hasHydrated: true });
-    });
-  }, []);
 
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (!over) return;
@@ -76,7 +71,32 @@ export function WatchlistSection() {
       </div>
 
       <div className="mt-4 min-h-10">
-        {!hasHydrated ? null : instruments.length === 0 ? (
+        {error ? (
+          <div
+            role="alert"
+            className="mb-3 flex items-center gap-3 text-sm text-destructive"
+          >
+            <p>{error}</p>
+            <Button type="button" variant="outline" onClick={retry}>
+              Retry
+            </Button>
+          </div>
+        ) : null}
+        {isSaving ? (
+          <p role="status" className="mb-2 text-xs text-muted-foreground">
+            Saving watchlist…
+          </p>
+        ) : null}
+        {instruments.length >= 20 ? (
+          <p className="mb-2 text-xs text-muted-foreground">
+            Your watchlist can hold up to 20 instruments.
+          </p>
+        ) : null}
+        {!hasHydrated ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Loading watchlist…
+          </p>
+        ) : instruments.length === 0 ? (
           <p className="flex min-h-10 items-center text-sm text-muted-foreground">
             Your watchlist is empty.
           </p>
@@ -99,6 +119,7 @@ export function WatchlistSection() {
                     key={getWatchlistInstrumentId(instrument)}
                     instrument={instrument}
                     onRemove={removeInstrument}
+                    disabled={isSaving}
                   />
                 ))}
               </ul>
@@ -113,11 +134,13 @@ export function WatchlistSection() {
 interface SortableWatchlistItemProps {
   readonly instrument: InstrumentSearchResult;
   readonly onRemove: (provider: string, providerAssetId: string) => void;
+  readonly disabled: boolean;
 }
 
 function SortableWatchlistItem({
   instrument,
   onRemove,
+  disabled,
 }: SortableWatchlistItemProps) {
   const id = getWatchlistInstrumentId(instrument);
   const {
@@ -127,7 +150,7 @@ function SortableWatchlistItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled });
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -146,6 +169,7 @@ function SortableWatchlistItem({
         type="button"
         className="flex size-7 touch-none cursor-grab items-center justify-center rounded-md text-primary outline-none hover:bg-accent active:cursor-grabbing focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label={`Reorder ${instrument.symbol}`}
+        disabled={disabled}
         {...attributes}
         {...listeners}
       >
@@ -160,6 +184,7 @@ function SortableWatchlistItem({
         size="icon-sm"
         className="text-primary hover:text-primary"
         aria-label={`Remove ${instrument.symbol} from watchlist`}
+        disabled={disabled}
         onClick={() =>
           onRemove(instrument.provider, instrument.providerAssetId)
         }

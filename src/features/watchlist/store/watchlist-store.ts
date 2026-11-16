@@ -34,7 +34,7 @@ export const useWatchlistStore = create<WatchlistState>()(
               item.providerAssetId === instrument.providerAssetId,
           );
 
-          return isAlreadyAdded
+          return isAlreadyAdded || state.instruments.length >= 20
             ? state
             : { instruments: [...state.instruments, instrument] };
         }),

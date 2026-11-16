@@ -60,7 +60,47 @@ Supabase's built-in email sender is restricted to project-team addresses and
 currently two messages per hour. Configure custom SMTP before inviting ordinary
 app users. The resend button has a 60-second cooldown; Supabase's own rate limits
 still apply. No SMTP credentials are required in Vercel or GitHub.
-Password recovery and authenticated watchlist persistence are follow-up features.
+Password recovery is a follow-up feature.
+
+### Account-owned dashboard watchlists
+
+The dashboard at `/` remains the single watchlist UI, for both anonymous and
+authenticated users. There is no separate watchlist page. Page guards will be
+introduced with features that require a dedicated authenticated page.
+
+Signed-in watchlists belong to the user in Supabase. `watchlists` stores the
+owner and revision; `watchlist_items` stores instrument IDs and ordering.
+RLS restricts table reads to the owner. Anonymous access and direct client
+writes are revoked. The `save_my_watchlist` RPC checks `auth.uid()` against the
+expected owner, validates the list, and replaces up to 20 entries atomically.
+A revision check rejects stale writes from other tabs/devices.
+
+TanStack Query owns saved-list data, keyed by user ID, with optimistic saves,
+rollback on errors, and reloading after revision conflicts. The server prefetches
+the owner's list and dehydrates it for hydration without an immediate duplicate
+fetch. Market charts and news continue loading in the browser independently.
+Account changes clear the previous owner's private query cache. No authenticated
+list is copied into Zustand/localStorage.
+
+Anonymous lists stay in Zustand/localStorage. At login, an empty saved account
+list is automatically seeded from the anonymous list, if any. A populated saved
+list always wins and is never merged with anonymous selections. Revision checks
+prevent the copy from overwriting a concurrent edit. The anonymous list is never
+cleared by this process; logout returns to it.
+
+A per-tab sessionStorage marker records that the initialization decision was
+made. It stores no auth credentials or list data. Successful login resets this
+marker before Supabase emits the login event. Automatic copies are marked
+complete only after the save succeeds, so navigation cannot leave an unfinished
+copy marked as done. Deliberately emptying a saved list does not repeatedly restore the
+anonymous list during that login session or after a page reload. Failed copies
+can be retried explicitly without losing anonymous selections.
+
+Apply schema changes with `npx supabase db push --linked`. The rollback-only
+checks in `supabase/tests/owned_watchlists.sql` cover two users, RLS, anonymous
+access, direct-write rejection, revision conflicts, and validation. Run them with
+`npx supabase db query --linked --file supabase/tests/owned_watchlists.sql`.
+Normal unit and browser tests use mocked services and need no production credentials.
 
 Market Lens is in active development.
 

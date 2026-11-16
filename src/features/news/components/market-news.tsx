@@ -7,7 +7,7 @@ import { ExternalLink, Newspaper } from "lucide-react";
 import { Suspense, useState } from "react";
 import { marketNewsQueryOptions } from "@/features/news/queries/market-news";
 import type { MarketNewsItem } from "@/features/news/types/market-news";
-import { useWatchlistStore } from "@/features/watchlist/store/watchlist-store";
+import { useWatchlist } from "@/features/watchlist/watchlist-provider";
 
 const relativeTimeFormatter = new Intl.RelativeTimeFormat("en", {
   numeric: "auto",
@@ -20,8 +20,7 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 export function MarketNews() {
-  const instruments = useWatchlistStore((state) => state.instruments);
-  const hasHydrated = useWatchlistStore((state) => state.hasHydrated);
+  const { instruments, hasHydrated } = useWatchlist();
 
   if (!hasHydrated || instruments.length === 0) return null;
 

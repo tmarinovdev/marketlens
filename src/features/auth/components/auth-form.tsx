@@ -4,7 +4,7 @@ import {
   useEffect,
   useState,
   useSyncExternalStore,
-  type FormEvent,
+  type SubmitEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +65,7 @@ export function AuthForm({
     onSuccess: () => setResendCoolingDown(true),
   });
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (mutation.isPending) return;
     setValidationError(null);
