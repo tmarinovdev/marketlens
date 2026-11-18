@@ -18,10 +18,12 @@ const subscribeToHydration = () => () => {};
 
 export function AuthForm({
   mode,
+  returnInstrument,
   verificationFailed = false,
   automaticSignInFailed = false,
 }: {
   mode: "register" | "login";
+  returnInstrument?: string;
   verificationFailed?: boolean;
   automaticSignInFailed?: boolean;
 }) {
@@ -57,7 +59,12 @@ export function AuthForm({
         setPassword("");
         setConfirmPassword("");
         setResendCoolingDown(true);
-      } else window.location.assign("/");
+      } else
+        window.location.assign(
+          returnInstrument
+            ? `/instrument/${encodeURIComponent(returnInstrument)}`
+            : "/",
+        );
     },
   });
   const resend = useMutation({

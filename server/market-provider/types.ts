@@ -4,6 +4,10 @@ import type {
   MarketSnapshotsResponse,
 } from "@/features/market-data/types/market-data";
 import type { MarketNewsItem } from "@/features/news/types/market-news";
+import type {
+  InstrumentQuote,
+  InstrumentSession,
+} from "@/features/market-data/types/instrument-detail";
 
 export interface MarketProviderRequestOptions {
   readonly apiKey: string;
@@ -12,6 +16,14 @@ export interface MarketProviderRequestOptions {
 }
 
 export interface MarketProvider {
+  instrumentQuote(
+    symbol: string,
+    options: MarketProviderRequestOptions,
+  ): Promise<InstrumentQuote>;
+  instrumentSession(
+    symbol: string,
+    options: MarketProviderRequestOptions,
+  ): Promise<InstrumentSession>;
   snapshots(
     symbols: readonly string[],
     options: MarketProviderRequestOptions,

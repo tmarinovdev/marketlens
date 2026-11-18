@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  instrumentDetailSchema,
+  instrumentSessionSchema,
+} from "../types/instrument-detail";
 import { chartRanges } from "../types/market-data";
 import type {
   ChartRange,
@@ -47,6 +51,15 @@ function marketPath(
   return `${pathname}?${searchParams}`;
 }
 
+export class MarketRequestError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`Market data request failed with ${status}.`);
+    this.status = status;
+  }
+}
+
 async function fetchJson(path: string, signal?: AbortSignal): Promise<unknown> {
   const response = await fetch(path, {
     headers: { Accept: "application/json" },
@@ -54,10 +67,34 @@ async function fetchJson(path: string, signal?: AbortSignal): Promise<unknown> {
   });
 
   if (!response.ok) {
-    throw new Error(`Market data request failed with ${response.status}.`);
+    throw new MarketRequestError(response.status);
   }
 
   return response.json();
+}
+
+export async function fetchInstrumentDetail(
+  symbol: string,
+  signal: AbortSignal,
+) {
+  return instrumentDetailSchema.parse(
+    await fetchJson(
+      `/api/market/instrument?${new URLSearchParams({ symbol })}`,
+      signal,
+    ),
+  );
+}
+
+export async function fetchInstrumentSession(
+  symbol: string,
+  signal: AbortSignal,
+) {
+  return instrumentSessionSchema.parse(
+    await fetchJson(
+      `/api/market/instrument-session?${new URLSearchParams({ symbol })}`,
+      signal,
+    ),
+  );
 }
 
 export async function fetchMarketSnapshots(

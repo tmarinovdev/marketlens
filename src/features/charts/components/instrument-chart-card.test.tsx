@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { InstrumentChartCard } from "./instrument-chart-card";
 
+vi.mock("@tanstack/react-router", () => ({
+  Link: () => null,
+}));
+
 const instrument = {
   id: 1,
   provider: "alpaca",

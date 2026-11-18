@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node server/dev.ts",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.server.json && tsc -p tsconfig.node.json",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.server.json && tsc -p tsconfig.node.json",
     "build": "npm run typecheck && vite build && vite build --ssr src/entry-server.tsx",
     "build:vercel": "npm run typecheck && vite build && node scripts/build-vercel.ts",
     "verify:vercel": "node scripts/verify-vercel.mjs",
@@ -36,6 +36,7 @@
     "@tanstack/react-router-ssr-query": "1.167.3",
     "class-variance-authority": "0.7.1",
     "cn": "0.4.0",
+    "lightweight-charts": "5.2.0",
     "lucide-react": "1.48.0",
     "radix-ui": "1.6.7",
     "react": "19.3.0",

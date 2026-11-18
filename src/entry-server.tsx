@@ -3,6 +3,7 @@ import {
   defaultRenderHandler,
 } from "@tanstack/react-router/ssr/server";
 import { createRouter } from "@/app/router";
+import { hasAuthSessionCookie } from "@/features/auth/session-cookie";
 import {
   createAuthRequest,
   handleAuthCallback,
@@ -16,10 +17,9 @@ export async function render({
   if (new URL(request.url).pathname === "/auth/callback")
     return handleAuthCallback(request);
   // Anonymous requests remain fast and can render without runtime credentials.
-  const hasAuthCookie = /(?:^|;\s*)sb-[^=]+-auth-token(?:\.\d+)?=/.test(
-    request.headers.get("Cookie") ?? "",
-  );
-  const auth = hasAuthCookie ? createAuthRequest(request) : null;
+  const auth = hasAuthSessionCookie(request)
+    ? createAuthRequest(request)
+    : null;
   const user = auth ? await auth.getUser() : null;
   const handler = createRequestHandler({
     request,

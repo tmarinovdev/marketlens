@@ -1,4 +1,6 @@
 import { useId } from "react";
+import { Link } from "@tanstack/react-router";
+import { View } from "lucide-react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -132,6 +134,16 @@ export function InstrumentChartCard({
             ) : null}
           </>
         )}
+        <Link
+          to="/instrument/$symbol"
+          params={{ symbol: instrument.symbol }}
+          preload={false}
+          aria-label={`View ${instrument.symbol} details`}
+          title={`View ${instrument.symbol} details`}
+          className="ml-auto grid shrink-0 place-items-center text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <View className="size-6" aria-hidden="true" />
+        </Link>
       </div>
 
       <div className="mt-2 flex min-h-28 flex-1 items-center">

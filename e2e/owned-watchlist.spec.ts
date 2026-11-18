@@ -47,6 +47,140 @@ async function signIn(page: Page, id: string) {
   );
 }
 
+test("opens instrument details from the dashboard and reuses history across line ranges", async ({
+  page,
+}) => {
+  const timestamp = "2026-11-16T14:30:00Z";
+  const candle = {
+    timestamp,
+    open: 100,
+    high: 105,
+    low: 99,
+    close: 104,
+    volume: 1000,
+  };
+  let historyRequests = 0;
+
+  await page.route("**/auth/v1/user", (route) =>
+    route.fulfill({
+      json: {
+        id: ownerA,
+        email: "a@example.com",
+        aud: "authenticated",
+        app_metadata: {},
+        user_metadata: {},
+        created_at: timestamp,
+      },
+    }),
+  );
+  await page.route("**/rest/v1/rpc/read_my_watchlist", (route) =>
+    route.fulfill({
+      json: { revision: 1, instruments: [apple] },
+    }),
+  );
+  await page.route("**/api/market/**", (route) => {
+    const url = new URL(route.request().url());
+    const market = {
+      marketOpen: false,
+      nextOpen: new Date(Date.now() + 3600000).toISOString(),
+    };
+    switch (url.pathname) {
+      case "/api/market/snapshots":
+        return route.fulfill({
+          json: {
+            ...market,
+            fetchedAt: timestamp,
+            snapshots: [
+              { symbol: "AAPL", price: 104, changePercent: 4, asOf: timestamp },
+            ],
+          },
+        });
+      case "/api/market/instrument":
+        expect(url.searchParams.get("symbol")).toBe("AAPL");
+        return route.fulfill({
+          json: {
+            ...market,
+            name: "Apple",
+            exchange: "NASDAQ",
+            currency: "USD",
+            price: 104,
+            changePercent: 4,
+            previousClose: 100,
+            asOf: timestamp,
+            bid: 103,
+            ask: 105,
+            quoteAsOf: timestamp,
+            dailyBar: { ...candle, vwap: 102, trades: 40 },
+          },
+        });
+      case "/api/market/instrument-session":
+        return route.fulfill({
+          json: { sessionDate: "2026-11-16", candles: [candle] },
+        });
+      case "/api/market/history-bundle":
+        if (url.searchParams.get("symbols") === "AAPL") historyRequests++;
+        return route.fulfill({
+          json: {
+            fetchedAt: timestamp,
+            histories: ["1W", "1M", "3M"].map((range) => ({
+              symbol: "AAPL",
+              range,
+              sessionDate: null,
+              points: [{ timestamp, price: 104 }],
+            })),
+          },
+        });
+      default:
+        return route.fulfill({
+          json: { fetchedAt: timestamp, histories: [], articles: [] },
+        });
+    }
+  });
+
+  const apiResponse = await page.request.get(
+    "/api/market/instrument?symbol=AAPL",
+  );
+  expect(apiResponse.status()).toBe(401);
+  await page.goto("/instrument/AAPL");
+  await expect(page).toHaveURL(/\/login\?instrument=AAPL$/);
+  await page.getByRole("link", { name: "MarketLens dashboard" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await signIn(page, ownerA);
+  const detailsLink = page.getByRole("link", { name: "View AAPL details" });
+  await expect(detailsLink).toHaveAttribute("href", "/instrument/AAPL");
+  await detailsLink.click();
+  await expect(page).toHaveURL(/\/instrument\/AAPL$/);
+  const chart = page.getByRole("img", {
+    name: "AAPL 15-minute candlestick chart",
+  });
+  await expect(chart.locator("canvas").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "AAPL" })).toBeVisible();
+  await expect(page.getByText("VWAP", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Line", exact: true }).click();
+  await expect(
+    page
+      .getByRole("img", { name: "AAPL 1D line chart" })
+      .locator("canvas")
+      .first(),
+  ).toBeVisible();
+  await expect.poll(() => historyRequests).toBe(1);
+  await page.getByRole("button", { name: "1W", exact: true }).click();
+  await expect(
+    page
+      .getByRole("img", { name: "AAPL 1W line chart" })
+      .locator("canvas")
+      .first(),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "1M", exact: true }).click();
+  await expect(
+    page
+      .getByRole("img", { name: "AAPL 1M line chart" })
+      .locator("canvas")
+      .first(),
+  ).toBeVisible();
+  expect(historyRequests).toBe(1);
+});
+
 test("copies the anonymous list immediately after password login without an extra refresh", async ({
   page,
 }) => {

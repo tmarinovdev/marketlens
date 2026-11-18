@@ -37,6 +37,24 @@ beforeEach(() => {
 });
 
 describe("authenticated SSR", () => {
+  it("redirects a direct anonymous instrument request to login with its symbol", async () => {
+    const response = await render({
+      request: new Request("https://marketlens.test/instrument/aapl"),
+    });
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("/login?instrument=AAPL");
+  });
+
+  it("renders the detail page shell for a verified session", async () => {
+    const response = await render({
+      request: new Request("https://marketlens.test/instrument/AAPL", {
+        headers: { Cookie: "sb-test-auth-token=mock-session" },
+      }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("Loading price chart");
+  });
+
   it("renders and dehydrates the owner's watchlist without sharing it with another request", async () => {
     const makeRequest = () =>
       new Request("https://marketlens.test/", {

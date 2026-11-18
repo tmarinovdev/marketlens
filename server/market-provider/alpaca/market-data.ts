@@ -8,6 +8,10 @@ import type {
 } from "@/features/market-data/types/market-data";
 import type { MarketProvider, MarketProviderRequestOptions } from "../types.ts";
 import { fetchAlpacaNews } from "./news.ts";
+import type {
+  InstrumentQuote,
+  InstrumentSession,
+} from "@/features/market-data/types/instrument-detail";
 
 const ALPACA_DATA_URL = "https://data.alpaca.markets/v2/stocks";
 const ALPACA_CLOCK_URL = "https://paper-api.alpaca.markets/v2/clock";
@@ -32,6 +36,13 @@ const AlpacaTradeSchema = z.object({
 
 const AlpacaSnapshotSchema = z.object({
   latestTrade: AlpacaTradeSchema.nullish(),
+  latestQuote: z
+    .object({
+      t: z.iso.datetime({ offset: true }),
+      bp: z.number(),
+      ap: z.number(),
+    })
+    .nullish(),
   minuteBar: AlpacaBarSchema.nullish(),
   dailyBar: AlpacaBarSchema.nullish(),
   prevDailyBar: AlpacaBarSchema.nullish(),
@@ -190,14 +201,14 @@ function normalizeSnapshot(
   };
 }
 
-export async function fetchAlpacaSnapshots(
+async function fetchSnapshotInputs(
   symbols: readonly string[],
   {
     apiKey,
     apiSecret,
     fetchImplementation = fetch,
   }: MarketProviderRequestOptions,
-): Promise<MarketSnapshotsResponse> {
+) {
   const snapshotUrl = new URL(`${ALPACA_DATA_URL}/snapshots`);
   snapshotUrl.searchParams.set("symbols", symbols.join(","));
   snapshotUrl.searchParams.set("feed", "iex");
@@ -219,6 +230,14 @@ export async function fetchAlpacaSnapshots(
   ]);
   const snapshots = AlpacaSnapshotsSchema.parse(snapshotsPayload);
   const clock = AlpacaClockSchema.parse(clockPayload);
+  return { snapshots, clock };
+}
+
+export async function fetchAlpacaSnapshots(
+  symbols: readonly string[],
+  options: MarketProviderRequestOptions,
+): Promise<MarketSnapshotsResponse> {
+  const { snapshots, clock } = await fetchSnapshotInputs(symbols, options);
 
   return {
     snapshots: symbols.map((symbol) =>
@@ -230,17 +249,108 @@ export async function fetchAlpacaSnapshots(
   };
 }
 
-export async function fetchAlpacaHistory(
+function normalizeCandle(bar: AlpacaBar) {
+  return {
+    timestamp: bar.t,
+    open: bar.o,
+    high: bar.h,
+    low: bar.l,
+    close: bar.c,
+    volume: bar.v,
+  };
+}
+
+async function fetchInstrumentQuote(
+  symbol: string,
+  options: MarketProviderRequestOptions,
+): Promise<InstrumentQuote> {
+  const { snapshots, clock } = await fetchSnapshotInputs([symbol], options);
+  const snapshot = snapshots[symbol];
+  const { price, changePercent, asOf } = normalizeSnapshot(symbol, snapshot);
+  const bar = snapshot?.dailyBar;
+  return {
+    price,
+    changePercent,
+    asOf,
+    previousClose: snapshot?.prevDailyBar?.c ?? null,
+    bid: snapshot?.latestQuote?.bp || null,
+    ask: snapshot?.latestQuote?.ap || null,
+    quoteAsOf: snapshot?.latestQuote?.t ?? null,
+    dailyBar: bar
+      ? { ...normalizeCandle(bar), vwap: bar.vw ?? null, trades: bar.n ?? null }
+      : null,
+    marketOpen: clock.is_open,
+    nextOpen: clock.next_open,
+  };
+}
+
+const calendarSchema = z.array(
+  z.object({
+    date: z.iso.date(),
+    open: z.string().regex(/^\d{2}:\d{2}$/),
+    close: z.string().regex(/^\d{2}:\d{2}$/),
+  }),
+);
+
+const toMinute = (value: string) =>
+  Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+
+export async function fetchInstrumentSession(
+  symbol: string,
+  options: MarketProviderRequestOptions,
+  now = new Date(),
+): Promise<InstrumentSession> {
+  const { apiKey, apiSecret, fetchImplementation = fetch } = options;
+  const today = getNewYorkDateAndMinute(now.toISOString());
+  const start = subtractUtcDays(now, 8);
+  const url = new URL("https://paper-api.alpaca.markets/v2/calendar");
+  url.searchParams.set(
+    "start",
+    getNewYorkDateAndMinute(start.toISOString()).date,
+  );
+  url.searchParams.set("end", today.date);
+
+  const [calendar, bars] = await Promise.all([
+    fetchImplementation(url, {
+      headers: alpacaHeaders(apiKey, apiSecret),
+      signal: AbortSignal.timeout(15_000),
+    }).then(async (response) =>
+      calendarSchema.parse(await parseAlpacaResponse(response, "calendar")),
+    ),
+    fetchHistoryBars([symbol], { timeframe: "15Min", start }, options, now),
+  ]);
+  const session = calendar
+    .filter(
+      ({ date, open }) =>
+        date < today.date ||
+        (date === today.date && toMinute(open) <= today.minute),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const candles = session
+    ? (bars.get(symbol) ?? [])
+        .filter(({ t }) => {
+          const { date, minute } = getNewYorkDateAndMinute(t);
+          return (
+            date === session.date &&
+            minute >= toMinute(session.open) &&
+            minute < toMinute(session.close)
+          );
+        })
+        .map(normalizeCandle)
+    : [];
+  return { sessionDate: session?.date ?? null, candles };
+}
+
+async function fetchHistoryBars(
   symbols: readonly string[],
-  range: ChartRange,
+  parameters: HistoryParameters,
   {
     apiKey,
     apiSecret,
     fetchImplementation = fetch,
   }: MarketProviderRequestOptions,
-  now = new Date(),
-): Promise<readonly MarketHistory[]> {
-  const parameters = historyParameters(range, now);
+  now: Date,
+) {
   const collectedBars = new Map<string, AlpacaBar[]>(
     symbols.map((symbol) => [symbol, []]),
   );
@@ -278,6 +388,21 @@ export async function fetchAlpacaHistory(
     }
   }
 
+  return collectedBars;
+}
+
+export async function fetchAlpacaHistory(
+  symbols: readonly string[],
+  range: ChartRange,
+  options: MarketProviderRequestOptions,
+  now = new Date(),
+): Promise<readonly MarketHistory[]> {
+  const collectedBars = await fetchHistoryBars(
+    symbols,
+    historyParameters(range, now),
+    options,
+    now,
+  );
   return symbols.map((symbol) =>
     normalizeHistory(symbol, range, collectedBars.get(symbol) ?? []),
   );
@@ -333,6 +458,8 @@ export async function fetchAlpacaHistoryBundle(
 }
 
 export const alpacaMarketProvider: MarketProvider = {
+  instrumentQuote: fetchInstrumentQuote,
+  instrumentSession: fetchInstrumentSession,
   snapshots: fetchAlpacaSnapshots,
   history: fetchAlpacaHistory,
   historyBundle: fetchAlpacaHistoryBundle,

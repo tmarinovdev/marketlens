@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  fetchInstrumentSession,
   fetchAlpacaHistory,
   fetchAlpacaHistoryBundle,
   fetchAlpacaSnapshots,
@@ -24,6 +25,48 @@ function bar(timestamp: string, close: number) {
 }
 
 describe("Alpaca market data", () => {
+  it("shows the previous shortened session before the next open and excludes after-hours bars", async () => {
+    const now = new Date("2026-11-30T14:00:00Z");
+    const session = await fetchInstrumentSession(
+      "AAPL",
+      {
+        ...options,
+        fetchImplementation: async (input) => {
+          if (String(input).includes("/calendar")) {
+            return Response.json([
+              { date: "2026-11-27", open: "09:30", close: "13:00" },
+              { date: "2026-11-30", open: "09:30", close: "16:00" },
+            ]);
+          }
+          return Response.json({
+            bars: {
+              AAPL: [
+                bar("2026-11-27T17:45:00Z", 105),
+                bar("2026-11-27T18:00:00Z", 106),
+                bar("2026-11-30T13:45:00Z", 110),
+              ],
+            },
+            next_page_token: null,
+          });
+        },
+      },
+      now,
+    );
+    expect(session).toEqual({
+      sessionDate: "2026-11-27",
+      candles: [
+        {
+          timestamp: "2026-11-27T17:45:00Z",
+          open: 104,
+          high: 106,
+          low: 103,
+          close: 105,
+          volume: 100,
+        },
+      ],
+    });
+  });
+
   it("normalizes batched snapshots and market status", async () => {
     const fetchImplementation: typeof fetch = async (input, init) => {
       expect(init?.headers).toMatchObject({

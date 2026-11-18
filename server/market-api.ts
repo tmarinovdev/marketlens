@@ -1,14 +1,12 @@
 import { z } from "zod";
 import { chartRanges } from "../src/features/market-data/types/market-data.ts";
+import { instrumentSymbolSchema } from "../src/features/market-data/types/instrument-detail.ts";
+import { hasAuthSessionCookie } from "../src/features/auth/session-cookie.ts";
+import { createAuthRequest } from "./auth/session.ts";
 import { getServerEnv } from "./env.ts";
 import { alpacaMarketProvider } from "./market-provider/alpaca/market-data.ts";
 
 const maximumSymbols = 20;
-const SymbolSchema = z
-  .string()
-  .trim()
-  .toUpperCase()
-  .regex(/^[A-Z][A-Z0-9.-]{0,9}$/);
 const RangeSchema = z.enum(chartRanges);
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
@@ -20,7 +18,11 @@ function jsonResponse(body: unknown, init?: ResponseInit): Response {
 
 function parseSymbols(url: URL): readonly string[] {
   const values = url.searchParams.get("symbols")?.split(",") ?? [];
-  const parsed = z.array(SymbolSchema).min(1).max(maximumSymbols).parse(values);
+  const parsed = z
+    .array(instrumentSymbolSchema)
+    .min(1)
+    .max(maximumSymbols)
+    .parse(values);
   return [...new Set(parsed)];
 }
 
@@ -38,6 +40,12 @@ export async function handleMarketApiRequest(
   }
 
   try {
+    if (
+      url.pathname === "/api/market/instrument" ||
+      url.pathname === "/api/market/instrument-session"
+    ) {
+      return await handleInstrumentRequest(request, url);
+    }
     const symbols = parseSymbols(url);
     const { ALPACA_API_KEY, ALPACA_API_SECRET } = getServerEnv();
     const providerOptions = {
@@ -95,4 +103,65 @@ export async function handleMarketApiRequest(
       { status: 502 },
     );
   }
+}
+
+async function handleInstrumentRequest(request: Request, url: URL) {
+  if (!hasAuthSessionCookie(request)) {
+    return jsonResponse(
+      { error: "Log in to view instrument details." },
+      { status: 401 },
+    );
+  }
+  const auth = createAuthRequest(request);
+  if (!(await auth.getUser())) {
+    return auth.applyHeaders(
+      jsonResponse(
+        { error: "Log in to view instrument details." },
+        { status: 401 },
+      ),
+    );
+  }
+
+  const symbol = instrumentSymbolSchema.parse(url.searchParams.get("symbol"));
+  const { ALPACA_API_KEY: apiKey, ALPACA_API_SECRET: apiSecret } =
+    getServerEnv();
+
+  if (url.pathname === "/api/market/instrument-session") {
+    return auth.applyHeaders(
+      jsonResponse(
+        await alpacaMarketProvider.instrumentSession(symbol, {
+          apiKey,
+          apiSecret,
+        }),
+      ),
+    );
+  }
+
+  const [catalog, quote] = await Promise.all([
+    auth.client
+      .from("instruments")
+      .select("name, exchange, currency")
+      .eq("provider", "alpaca")
+      .eq("normalized_symbol", symbol)
+      .eq("is_active", true)
+      .maybeSingle(),
+    alpacaMarketProvider.instrumentQuote(symbol, { apiKey, apiSecret }),
+  ]);
+  if (catalog.error)
+    throw new Error("Unable to read the instrument catalog.", {
+      cause: catalog.error,
+    });
+  if (!catalog.data && quote.price === null) {
+    return auth.applyHeaders(
+      jsonResponse({ error: "Instrument not found." }, { status: 404 }),
+    );
+  }
+  return auth.applyHeaders(
+    jsonResponse({
+      name: catalog.data?.name ?? symbol,
+      exchange: catalog.data?.exchange ?? null,
+      currency: catalog.data?.currency ?? "USD",
+      ...quote,
+    }),
+  );
 }

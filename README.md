@@ -513,7 +513,8 @@ their own polling and freshness policies later.
 TypeScript configuration is split by runtime:
 
 - `tsconfig.base.json`: shared strict checks and the `@/` source alias.
-- `tsconfig.json`: browser code, with DOM types.
+- `tsconfig.json`: entry point that lets editors discover the three projects.
+- `tsconfig.app.json`: browser code, with DOM types.
 - `tsconfig.server.json`: SSR and development server code, with Node and Vite
   environment types.
 - `tsconfig.node.json`: Vite configuration and build scripts, with Node types.
@@ -811,6 +812,24 @@ The dashboard uses:
 - a locally synchronized instrument catalog
 
 The browser does not communicate directly with Alpaca using private credentials.
+
+Dashboard chart cards link to the protected `/instrument/$symbol` route.
+TanStack Router checks the Supabase session before loading the page and
+preserves the symbol through login. The quote and session candle endpoints
+verify the session independently.
+
+The detail page polls IEX quotes every 30 seconds during market hours while
+the tab is visible. Its default view uses 15-minute OHLC candles from the
+current or previous regular trading session, based on Alpaca's calendar.
+The line view reuses those candles for 1D and loads one history bundle for
+the longer ranges. TradingView Lightweight Charts loads when the chart is
+ready to display.
+
+TradingView Lightweight Charts™ · Copyright (c) 2025 TradingView, Inc.
+https://www.tradingview.com/
+
+TradingView Lightweight Charts™ · Copyright (c) 2025 TradingView, Inc.
+https://www.tradingview.com/
 
 Dashboard cards request batched snapshots first, then load historical charts
 asynchronously. The default `1D` chart uses 15-minute bars and refreshes every
